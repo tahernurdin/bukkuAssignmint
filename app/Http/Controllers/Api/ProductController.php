@@ -2,26 +2,65 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\ProductDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreProductRequest;
+use App\Http\Requests\Api\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
-use App\Models\Product;
+use App\Services\ProductService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class ProductController extends Controller
 {
+    public function __construct(private readonly ProductService $products) {}
+
     /**
      * List all products available to transact against.
      */
     public function index(): AnonymousResourceCollection
     {
-        return ProductResource::collection(Product::orderBy('name')->get());
+        return ProductResource::collection($this->products->all());
     }
 
     /**
-     * Show a single product.
+     * Create a product.
      */
-    public function show(Product $product): ProductResource
+    public function store(StoreProductRequest $request): JsonResponse
     {
-        return ProductResource::make($product);
+        $product = $this->products->create(ProductDTO::fromRequest($request));
+
+        return ProductResource::make($product)
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
+    }
+
+    /**
+     * Show a single product by id.
+     */
+    public function show(int $id): ProductResource
+    {
+        return ProductResource::make($this->products->findById($id));
+    }
+
+    /**
+     * Update a product by id.
+     */
+    public function update(UpdateProductRequest $request, int $id): ProductResource
+    {
+        return ProductResource::make(
+            $this->products->update($id, ProductDTO::fromRequest($request))
+        );
+    }
+
+    /**
+     * Delete a product by id (refused with 409 if it has transactions).
+     */
+    public function destroy(int $id): Response
+    {
+        $this->products->delete($id);
+
+        return response()->noContent();
     }
 }

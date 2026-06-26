@@ -14,8 +14,13 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/refresh', [AuthController::class, 'refresh']);
     Route::get('/me', [AuthController::class, 'me']);
 
-    // Products (seeded catalogue) — read only.
-    Route::apiResource('products', ProductController::class)->only(['index', 'show']);
+    // Products. ID-based routes (no model binding) so the controller delegates
+    // fetching to ProductService.
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::get('/products/{id}', [ProductController::class, 'show']);
+    Route::patch('/products/{id}', [ProductController::class, 'update']);
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
     // Purchases and sales. update/destroy are the bonus features; the base
     // requirement only needs index + store.
