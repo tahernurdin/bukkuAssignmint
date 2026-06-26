@@ -48,7 +48,7 @@ sale). Value on hand drops by that cost: `315 − 9.84 = 305.16`.
 Clean, layered separation. A request flows:
 
 ```
-Route → Controller → FormRequest (validation) → DTO → Service → Model
+Route → Controller → FormRequest (validation) → DTO → Service → Repository → Model
                                                     ↘ Resource (response)
 ```
 
@@ -58,10 +58,16 @@ Route → Controller → FormRequest (validation) → DTO → Service → Model
 | FormRequests | Stateless validation | `StoreTransactionRequest`, `UpdateTransactionRequest` |
 | DTOs | Immutable input carriers | `TransactionDTO` |
 | Services | Orchestration & the WAC math | `TransactionService`, `Inventory\WacLedgerService` |
+| Repositories | Persistence boundary (interface + Eloquent impl) | `Contracts\TransactionRepositoryInterface`, `Eloquent\EloquentTransactionRepository` |
 | Resources | Output shaping + display rounding | `PurchaseResource`, `SaleResource`, `ProductResource` |
-| Models | Persistence + the per-row snapshot | `Transaction`, `Product` |
+| Models | Eloquent records + the per-row snapshot | `Transaction`, `Product` |
 
-The heart of the system is **`WacLedgerService::recalculateFrom($product, $fromDate)`**.
+Services depend on **repository interfaces** (`App\Repositories\Contracts`), bound to Eloquent
+implementations in `RepositoryServiceProvider`. This inverts the persistence dependency — the
+storage layer is swappable — and lets the WAC engine be unit-tested against an in-memory
+repository double with no database.
+
+The heart of the system is **`WacLedgerService::recalculateFrom($productId, $fromDate)`**.
 Each transaction row stores a *snapshot* of the inventory state right after it
 (`quantity_on_hand`, `value_on_hand`, `wac_at_time`, and `calculated_cost` for sales).
 To (re)compute, the engine seeds from the snapshot of the row just before `$fromDate` and
@@ -251,10 +257,13 @@ Both optional bonuses are implemented, and both reuse the single recalculation e
 ## Testing
 
 ```bash
-php artisan test
+php artisan test                      # everything
+php artisan test --testsuite=Unit     # WAC engine only — no database
 ```
 
-Covers the WAC math (the assignment example at full precision, sell-out, oversell rejection,
-partial recalculation) and the HTTP layer (auth, recording/listing, validation, per-product
-date uniqueness, and the bonus recalculation/rollback paths). Tests run against an in-memory
-SQLite database.
+- **Unit** — the WAC math (assignment example at full precision, sell-out, oversell
+  rejection, partial recalculation) runs against an **in-memory repository double, with no
+  database** (`tests/Doubles/InMemoryTransactionRepository`).
+- **Feature** — the HTTP layer (auth, recording/listing, validation, per-product date
+  uniqueness, the bonus recalculation/rollback paths) runs against an in-memory SQLite
+  database through the real Eloquent repositories.
