@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\TransactionDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
+use App\Repositories\Contracts\TransactionRepositoryInterface;
 use App\Services\Inventory\WacLedgerService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,10 @@ use Illuminate\Support\Facades\DB;
  */
 class TransactionService
 {
-    public function __construct(private readonly WacLedgerService $ledger) {}
+    public function __construct(
+        private readonly TransactionRepositoryInterface $transactions,
+        private readonly WacLedgerService $ledger,
+    ) {}
 
     /**
      * Record a new transaction and cost the affected chain.
@@ -29,10 +33,10 @@ class TransactionService
     public function create(TransactionDTO $dto): Transaction
     {
         return DB::transaction(function () use ($dto) {
-            $transaction = Transaction::create($dto->toAttributes());
-            $this->ledger->recalculateFrom($transaction->product, $dto->date);
+            $transaction = $this->transactions->create($dto->toAttributes());
+            $this->ledger->recalculateFrom($dto->productId, $dto->date);
 
-            return $transaction->refresh();
+            return $this->transactions->find($transaction->id);
         });
     }
 
@@ -44,10 +48,10 @@ class TransactionService
     {
         return DB::transaction(function () use ($transaction, $dto) {
             $earliestAffected = min($transaction->date->toDateString(), $dto->date);
-            $transaction->update($dto->toAttributes());
-            $this->ledger->recalculateFrom($transaction->product, $earliestAffected);
+            $this->transactions->update($transaction, $dto->toAttributes());
+            $this->ledger->recalculateFrom($dto->productId, $earliestAffected);
 
-            return $transaction->refresh();
+            return $this->transactions->find($transaction->id);
         });
     }
 
@@ -57,10 +61,10 @@ class TransactionService
     public function delete(Transaction $transaction): void
     {
         DB::transaction(function () use ($transaction) {
-            $product = $transaction->product;
+            $productId = $transaction->product_id;
             $fromDate = $transaction->date->toDateString();
-            $transaction->delete();
-            $this->ledger->recalculateFrom($product, $fromDate);
+            $this->transactions->delete($transaction);
+            $this->ledger->recalculateFrom($productId, $fromDate);
         });
     }
 
@@ -71,12 +75,6 @@ class TransactionService
      */
     public function listByType(TransactionType $type, ?int $productId = null): Collection
     {
-        return Transaction::query()
-            ->where('type', $type)
-            ->when($productId, fn ($query) => $query->forProduct($productId))
-            ->with('product')
-            ->orderBy('date')
-            ->orderBy('id')
-            ->get();
+        return $this->transactions->listByType($type, $productId);
     }
 }

@@ -4,8 +4,8 @@ namespace App\Services\Inventory;
 
 use App\Enums\TransactionType;
 use App\Exceptions\InsufficientStockException;
-use App\Models\Product;
 use App\Models\Transaction;
+use App\Repositories\Contracts\TransactionRepositoryInterface;
 
 /**
  * The Weighted Average Cost (WAC) engine.
@@ -26,8 +26,10 @@ class WacLedgerService
     /** Decimal places for quantities (matches the schema's decimal(15,2)). */
     private const QTY_SCALE = 2;
 
+    public function __construct(private readonly TransactionRepositoryInterface $transactions) {}
+
     /**
-     * Recompute the snapshot of every transaction for $product dated on or
+     * Recompute the snapshot of every transaction for the product dated on or
      * after $fromDate, replaying them in chronological order.
      *
      * Efficiency: we seed the replay from the snapshot of the transaction
@@ -35,29 +37,19 @@ class WacLedgerService
      * affected by a change at $fromDate are touched — not the whole history.
      *
      * Must be called inside a database transaction (see TransactionService);
-     * the row locks keep concurrent writers from interleaving.
+     * the repository's row locks keep concurrent writers from interleaving.
      *
      * @throws InsufficientStockException if any sale in the chain oversells.
      */
-    public function recalculateFrom(Product $product, string $fromDate): void
+    public function recalculateFrom(int $productId, string $fromDate): void
     {
         // Starting state = inventory held just before the affected date.
-        $previous = Transaction::forProduct($product->id)
-            ->where('date', '<', $fromDate)
-            ->orderByDesc('date')
-            ->lockForUpdate()
-            ->first();
+        $previous = $this->transactions->snapshotBefore($productId, $fromDate);
 
         $quantityOnHand = $previous?->quantity_on_hand ?? '0';
         $valueOnHand = $previous?->value_on_hand ?? '0';
 
-        $transactions = Transaction::forProduct($product->id)
-            ->where('date', '>=', $fromDate)
-            ->orderBy('date')
-            ->lockForUpdate()
-            ->get();
-
-        foreach ($transactions as $transaction) {
+        foreach ($this->transactions->chainFrom($productId, $fromDate) as $transaction) {
             [$quantityOnHand, $valueOnHand] = $this->apply($transaction, $quantityOnHand, $valueOnHand);
         }
     }
@@ -143,7 +135,8 @@ class WacLedgerService
             'wac_at_time' => $wac,
             'quantity_on_hand' => $quantityOnHand,
             'value_on_hand' => $valueOnHand,
-        ])->save();
+        ]);
+        $this->transactions->save($transaction);
 
         return [$quantityOnHand, $valueOnHand];
     }

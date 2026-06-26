@@ -5,14 +5,18 @@ namespace App\Services;
 use App\DTOs\ProductDTO;
 use App\Exceptions\ProductHasTransactionsException;
 use App\Models\Product;
+use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
- * The single place that reads and writes the Product model. Controllers pass
- * ids and DTOs; this service owns all persistence.
+ * Application service for products. Persistence is delegated to the repository;
+ * this layer owns the domain rules (e.g. not deleting a product still in use).
  */
 class ProductService
 {
+    public function __construct(private readonly ProductRepositoryInterface $products) {}
+
     /**
      * List all products, alphabetically.
      *
@@ -20,7 +24,7 @@ class ProductService
      */
     public function all(): Collection
     {
-        return Product::orderBy('name')->get();
+        return $this->products->all();
     }
 
     /**
@@ -28,7 +32,8 @@ class ProductService
      */
     public function findById(int $id): Product
     {
-        return Product::findOrFail($id);
+        return $this->products->find($id)
+            ?? throw (new ModelNotFoundException())->setModel(Product::class, [$id]);
     }
 
     /**
@@ -36,7 +41,7 @@ class ProductService
      */
     public function create(ProductDTO $dto): Product
     {
-        return Product::create($dto->toAttributes());
+        return $this->products->create($dto->toAttributes());
     }
 
     /**
@@ -44,10 +49,7 @@ class ProductService
      */
     public function update(int $id, ProductDTO $dto): Product
     {
-        $product = $this->findById($id);
-        $product->update($dto->toAttributes());
-
-        return $product;
+        return $this->products->update($this->findById($id), $dto->toAttributes());
     }
 
     /**
@@ -60,10 +62,10 @@ class ProductService
     {
         $product = $this->findById($id);
 
-        if ($product->transactions()->exists()) {
+        if ($this->products->hasTransactions($product)) {
             throw new ProductHasTransactionsException($product->id);
         }
 
-        $product->delete();
+        $this->products->delete($product);
     }
 }
