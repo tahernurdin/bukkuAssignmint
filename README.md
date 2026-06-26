@@ -135,7 +135,10 @@ token. Resource responses are wrapped in a `data` key.
 | POST | `/refresh` | Refresh the token |
 | GET | `/me` | Current user |
 | GET | `/products` | List products |
+| POST | `/products` | Create a product |
 | GET | `/products/{id}` | Show a product |
+| PATCH | `/products/{id}` | Update a product |
+| DELETE | `/products/{id}` | Delete a product (409 if it has transactions) |
 | GET | `/purchases` | List purchases (oldest first) |
 | POST | `/purchases` | Record a purchase |
 | PATCH | `/purchases/{id}` | Update a purchase *(bonus)* |
