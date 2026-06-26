@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TransactionType;
 use App\Models\Product;
+use App\Models\Transaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithAuth;
 use Tests\TestCase;
@@ -36,5 +38,82 @@ class ProductTest extends TestCase
             ->getJson("/api/products/{$product->id}")
             ->assertStatus(200)
             ->assertJsonPath('data.sku', 'WID-1');
+    }
+
+    public function test_showing_an_unknown_product_returns_404(): void
+    {
+        $this->withHeaders($this->authHeaders())
+            ->getJson('/api/products/9999')
+            ->assertStatus(404);
+    }
+
+    public function test_it_creates_a_product(): void
+    {
+        $this->withHeaders($this->authHeaders())
+            ->postJson('/api/products', ['name' => 'Sprocket', 'sku' => 'SPR-1'])
+            ->assertStatus(201)
+            ->assertJsonPath('data.name', 'Sprocket')
+            ->assertJsonPath('data.sku', 'SPR-1');
+
+        $this->assertDatabaseHas('products', ['sku' => 'SPR-1']);
+    }
+
+    public function test_it_validates_product_creation(): void
+    {
+        $this->withHeaders($this->authHeaders())
+            ->postJson('/api/products', [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'sku']);
+    }
+
+    public function test_it_rejects_a_duplicate_sku(): void
+    {
+        Product::factory()->create(['sku' => 'DUP-1']);
+
+        $this->withHeaders($this->authHeaders())
+            ->postJson('/api/products', ['name' => 'Other', 'sku' => 'DUP-1'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('sku');
+    }
+
+    public function test_it_updates_a_product_and_allows_keeping_its_own_sku(): void
+    {
+        $product = Product::factory()->create(['name' => 'Old', 'sku' => 'KEEP-1']);
+
+        $this->withHeaders($this->authHeaders())
+            ->patchJson("/api/products/{$product->id}", ['name' => 'New', 'sku' => 'KEEP-1'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.name', 'New');
+
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'name' => 'New']);
+    }
+
+    public function test_it_deletes_a_product_with_no_transactions(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->withHeaders($this->authHeaders())
+            ->deleteJson("/api/products/{$product->id}")
+            ->assertStatus(204);
+
+        $this->assertDatabaseMissing('products', ['id' => $product->id]);
+    }
+
+    public function test_it_refuses_to_delete_a_product_that_has_transactions(): void
+    {
+        $product = Product::factory()->create();
+        Transaction::create([
+            'product_id' => $product->id,
+            'type' => TransactionType::Purchase,
+            'date' => '2022-01-01',
+            'quantity' => '10',
+            'price' => '2.00',
+        ]);
+
+        $this->withHeaders($this->authHeaders())
+            ->deleteJson("/api/products/{$product->id}")
+            ->assertStatus(409);
+
+        $this->assertDatabaseHas('products', ['id' => $product->id]);
     }
 }
