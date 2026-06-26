@@ -10,6 +10,7 @@ use App\Http\Requests\Api\UpdateTransactionRequest;
 use App\Http\Resources\PurchaseResource;
 use App\Models\Transaction;
 use App\Services\TransactionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -30,7 +31,7 @@ class PurchaseController extends Controller
     /**
      * Record a new purchase.
      */
-    public function store(StoreTransactionRequest $request): Response
+    public function store(StoreTransactionRequest $request): JsonResponse
     {
         $purchase = $this->transactions->create(
             TransactionDTO::forCreate($request, TransactionType::Purchase)

@@ -10,6 +10,7 @@ use App\Http\Requests\Api\UpdateTransactionRequest;
 use App\Http\Resources\SaleResource;
 use App\Models\Transaction;
 use App\Services\TransactionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -31,7 +32,7 @@ class SaleController extends Controller
      * Record a new sale. Its cost of goods sold is derived from the WAC at the
      * sale's date; selling more than is on hand is rejected with 422.
      */
-    public function store(StoreTransactionRequest $request): Response
+    public function store(StoreTransactionRequest $request): JsonResponse
     {
         $sale = $this->transactions->create(
             TransactionDTO::forCreate($request, TransactionType::Sale)
