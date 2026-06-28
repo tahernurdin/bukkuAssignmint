@@ -1,0 +1,50 @@
+### ============================================================
+### Auth — Register, Login, Logout, Refresh, Me
+### ============================================================
+
+### --------------------------------------------------------
+### Register a new user
+### --------------------------------------------------------
+POST http://localhost:8080/api/register
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password",
+    "role": "admin"
+}
+
+### --------------------------------------------------------
+### Login
+### --------------------------------------------------------
+POST http://localhost:8080/api/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "test@example.com",
+    "password": "password"
+}
+
+### --------------------------------------------------------
+### Get current user
+### --------------------------------------------------------
+GET http://localhost:8080/api/me
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### --------------------------------------------------------
+### Refresh token
+### --------------------------------------------------------
+POST http://localhost:8080/api/refresh
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### --------------------------------------------------------
+### Logout
+### --------------------------------------------------------
+POST http://localhost:8080/api/logout
+Accept: application/json
+Authorization: Bearer {{auth_token}}

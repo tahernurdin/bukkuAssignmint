@@ -1,0 +1,50 @@
+### ============================================================
+### Sales — List, Create, Update, Delete
+### Fields: product_id, date, quantity (no price — COGS derived from WAC)
+### Note: no show endpoint (excluded from apiResource)
+### Note: date must be unique per product among live transactions
+### Note: 422 if sale would oversell stock
+### ============================================================
+
+### --------------------------------------------------------
+### List all sales
+### --------------------------------------------------------
+GET http://localhost:8080/api/sales
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### --------------------------------------------------------
+### Create a sale
+### --------------------------------------------------------
+POST http://localhost:8080/api/sales
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+    "product_id": 1,
+    "date": "2026-06-15",
+    "quantity": 20
+}
+
+### --------------------------------------------------------
+### Update a sale
+### Note: product_id is immutable — only date and quantity
+### --------------------------------------------------------
+PUT http://localhost:8080/api/sales/1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+    "date": "2026-06-15",
+    "quantity": 25
+}
+
+### --------------------------------------------------------
+### Delete a sale (soft-delete, triggers recosting)
+### Returns 204 No Content
+### --------------------------------------------------------
+DELETE http://localhost:8080/api/sales/1
+Accept: application/json
+Authorization: Bearer {{auth_token}}

@@ -1,0 +1,51 @@
+### ============================================================
+### Purchases — List, Create, Update, Delete
+### Fields: product_id, date, quantity, buying_price
+### Note: no show endpoint (excluded from apiResource)
+### Note: date must be unique per product among live transactions
+### ============================================================
+
+### --------------------------------------------------------
+### List all purchases
+### --------------------------------------------------------
+GET http://localhost:8080/api/purchases
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### --------------------------------------------------------
+### Create a purchase
+### --------------------------------------------------------
+POST http://localhost:8080/api/purchases
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+    "product_id": 1,
+    "date": "2026-06-01",
+    "quantity": 100,
+    "buying_price": 10.50
+}
+
+### --------------------------------------------------------
+### Update a purchase
+### Note: product_id is immutable — only date, quantity, buying_price
+### --------------------------------------------------------
+PUT http://localhost:8080/api/purchases/1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+    "date": "2026-06-01",
+    "quantity": 150,
+    "buying_price": 9.75
+}
+
+### --------------------------------------------------------
+### Delete a purchase (soft-delete, triggers recosting)
+### Returns 204 No Content
+### --------------------------------------------------------
+DELETE http://localhost:8080/api/purchases/1
+Accept: application/json
+Authorization: Bearer {{auth_token}}

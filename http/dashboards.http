@@ -1,0 +1,17 @@
+### ============================================================
+### Role-Based Dashboards
+### ============================================================
+
+### --------------------------------------------------------
+### Admin dashboard (requires role: admin)
+### --------------------------------------------------------
+GET http://localhost:8080/api/admin-dashboard
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### --------------------------------------------------------
+### User dashboard (requires role: user)
+### --------------------------------------------------------
+GET http://localhost:8080/api/user-dashboard
+Accept: application/json
+Authorization: Bearer {{auth_token}}
