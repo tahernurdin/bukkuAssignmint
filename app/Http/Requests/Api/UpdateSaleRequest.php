@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use App\DTOs\TransactionUpdateDTO;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -26,7 +27,7 @@ class UpdateSaleRequest extends FormRequest
      * Shape only. Date uniqueness within the product's live ledger is enforced by
      * TransactionService (via the DB unique index), not here.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api;
 
 use App\DTOs\TransactionDTO;
 use App\Enums\TransactionType;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -26,7 +27,7 @@ class StorePurchaseRequest extends FormRequest
      * Shape only. One live transaction per product per date is a stateful domain
      * rule, enforced by TransactionService (via the DB unique index), not here.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
