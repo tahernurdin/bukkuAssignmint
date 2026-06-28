@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\TransactionDTO;
 use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreTransactionRequest;
@@ -59,7 +58,7 @@ abstract class AbstractTransactionController extends Controller
         $resource = $this->resourceClass();
 
         $transaction = $this->transactions->create(
-            TransactionDTO::forCreate($request, $this->type())
+            $request->toDto($this->type())
         );
 
         return $resource::make($transaction)
@@ -78,7 +77,7 @@ abstract class AbstractTransactionController extends Controller
 
         $updated = $this->transactions->update(
             $transaction,
-            TransactionDTO::forUpdate($request, $transaction)
+            $request->toDto()
         );
 
         return $resource::make($updated);

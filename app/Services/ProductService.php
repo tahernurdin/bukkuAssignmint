@@ -41,7 +41,7 @@ class ProductService
      */
     public function create(ProductDTO $dto): Product
     {
-        return $this->products->create($dto->toAttributes());
+        return $this->products->create($dto);
     }
 
     /**
@@ -49,7 +49,7 @@ class ProductService
      */
     public function update(int $id, ProductDTO $dto): Product
     {
-        return $this->products->update($this->findById($id), $dto->toAttributes());
+        return $this->products->update($this->findById($id), $dto);
     }
 
     /**

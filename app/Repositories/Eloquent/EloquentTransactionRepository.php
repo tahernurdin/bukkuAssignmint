@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\DTOs\TransactionDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
@@ -14,14 +15,14 @@ class EloquentTransactionRepository implements TransactionRepositoryInterface
         return Transaction::find($id);
     }
 
-    public function create(array $attributes): Transaction
+    public function create(TransactionDTO $dto): Transaction
     {
-        return Transaction::create($attributes);
+        return Transaction::create($this->toColumns($dto));
     }
 
-    public function update(Transaction $transaction, array $attributes): Transaction
+    public function update(Transaction $transaction, TransactionDTO $dto): Transaction
     {
-        $transaction->update($attributes);
+        $transaction->update($this->toColumns($dto));
 
         return $transaction;
     }
@@ -63,5 +64,21 @@ class EloquentTransactionRepository implements TransactionRepositoryInterface
     public function save(Transaction $transaction): void
     {
         $transaction->save();
+    }
+
+    /**
+     * Map the DTO onto the transaction's persistable columns.
+     *
+     * @return array<string, mixed>
+     */
+    private function toColumns(TransactionDTO $dto): array
+    {
+        return [
+            'product_id' => $dto->productId,
+            'type' => $dto->type,
+            'date' => $dto->date,
+            'quantity' => $dto->quantity,
+            'price' => $dto->price,
+        ];
     }
 }

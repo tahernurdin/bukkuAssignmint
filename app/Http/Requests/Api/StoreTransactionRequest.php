@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api;
 
+use App\DTOs\TransactionDTO;
+use App\Enums\TransactionType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -42,5 +44,19 @@ class StoreTransactionRequest extends FormRequest
             'quantity' => ['required', 'numeric', 'decimal:0,2', 'min:0.01'],
             'price' => ['required', 'numeric', 'decimal:0,2', 'min:0'],
         ];
+    }
+
+    /**
+     * Build the DTO for a new transaction; the type comes from the endpoint.
+     */
+    public function toDto(TransactionType $type): TransactionDTO
+    {
+        return new TransactionDTO(
+            productId: (int) $this->validated('product_id'),
+            type: $type,
+            date: $this->validated('date'),
+            quantity: (string) $this->validated('quantity'),
+            price: (string) $this->validated('price'),
+        );
     }
 }

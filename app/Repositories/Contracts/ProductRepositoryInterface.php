@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Contracts;
 
+use App\DTOs\ProductDTO;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -25,17 +26,13 @@ interface ProductRepositoryInterface
 
     /**
      * Persist a new product.
-     *
-     * @param array<string, mixed> $attributes
      */
-    public function create(array $attributes): Product;
+    public function create(ProductDTO $dto): Product;
 
     /**
      * Update an existing product.
-     *
-     * @param array<string, mixed> $attributes
      */
-    public function update(Product $product, array $attributes): Product;
+    public function update(Product $product, ProductDTO $dto): Product;
 
     /**
      * Delete a product.

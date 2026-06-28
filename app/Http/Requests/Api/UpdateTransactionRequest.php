@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\DTOs\TransactionDTO;
 use App\Models\Transaction;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -52,5 +53,22 @@ class UpdateTransactionRequest extends FormRequest
     public function routeTransaction(): Transaction
     {
         return $this->route('transaction');
+    }
+
+    /**
+     * Build the DTO for the update. Product and type are inherited from the
+     * existing transaction (immutable); only date/quantity/price may change.
+     */
+    public function toDto(): TransactionDTO
+    {
+        $existing = $this->routeTransaction();
+
+        return new TransactionDTO(
+            productId: $existing->product_id,
+            type: $existing->type,
+            date: $this->validated('date'),
+            quantity: (string) $this->validated('quantity'),
+            price: (string) $this->validated('price'),
+        );
     }
 }

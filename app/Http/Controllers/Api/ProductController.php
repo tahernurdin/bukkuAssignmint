@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\ProductDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreProductRequest;
 use App\Http\Requests\Api\UpdateProductRequest;
@@ -29,7 +28,7 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request): JsonResponse
     {
-        $product = $this->products->create(ProductDTO::fromRequest($request));
+        $product = $this->products->create($request->toDto());
 
         return ProductResource::make($product)
             ->response()
@@ -50,7 +49,7 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, int $id): ProductResource
     {
         return ProductResource::make(
-            $this->products->update($id, ProductDTO::fromRequest($request))
+            $this->products->update($id, $request->toDto())
         );
     }
 

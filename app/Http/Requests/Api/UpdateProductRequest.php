@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\DTOs\ProductDTO;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,5 +32,16 @@ class UpdateProductRequest extends FormRequest
                 Rule::unique('products', 'sku')->ignore($this->route('id')),
             ],
         ];
+    }
+
+    /**
+     * Build the DTO for the product update.
+     */
+    public function toDto(): ProductDTO
+    {
+        return new ProductDTO(
+            name: $this->validated('name'),
+            sku: $this->validated('sku'),
+        );
     }
 }

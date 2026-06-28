@@ -33,7 +33,7 @@ class TransactionService
     public function create(TransactionDTO $dto): Transaction
     {
         return DB::transaction(function () use ($dto) {
-            $transaction = $this->transactions->create($dto->toAttributes());
+            $transaction = $this->transactions->create($dto);
             $this->ledger->recalculateFrom($dto->productId, $dto->date);
 
             return $this->transactions->find($transaction->id)->load('product');
@@ -48,7 +48,7 @@ class TransactionService
     {
         return DB::transaction(function () use ($transaction, $dto) {
             $earliestAffected = min($transaction->date->toDateString(), $dto->date);
-            $this->transactions->update($transaction, $dto->toAttributes());
+            $this->transactions->update($transaction, $dto);
             $this->ledger->recalculateFrom($dto->productId, $earliestAffected);
 
             return $this->transactions->find($transaction->id)->load('product');

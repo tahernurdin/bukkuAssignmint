@@ -7,8 +7,6 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests\Api\RegisterRequest;
 use App\Http\Requests\Api\LoginRequest;
-use App\DTOs\RegisterDTO;
-use App\DTOs\LoginDTO;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
@@ -36,8 +34,7 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request): JsonResponse
     {
-        $dto = RegisterDTO::fromRequest($request);
-        $user = $this->authService->register($dto);
+        $user = $this->authService->register($request->toDto());
 
         return response()->json([
             'message' => 'User successfully registered',
@@ -53,8 +50,7 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $dto = LoginDTO::fromRequest($request);
-        $token = $this->authService->login($dto);
+        $token = $this->authService->login($request->toDto());
 
         if (!$token) {
             return response()->json(['error' => 'Unauthorized'], 401);

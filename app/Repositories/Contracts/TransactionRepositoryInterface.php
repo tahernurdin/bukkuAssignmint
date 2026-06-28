@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Contracts;
 
+use App\DTOs\TransactionDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,17 +23,13 @@ interface TransactionRepositoryInterface
 
     /**
      * Persist a new transaction.
-     *
-     * @param array<string, mixed> $attributes
      */
-    public function create(array $attributes): Transaction;
+    public function create(TransactionDTO $dto): Transaction;
 
     /**
      * Update an existing transaction.
-     *
-     * @param array<string, mixed> $attributes
      */
-    public function update(Transaction $transaction, array $attributes): Transaction;
+    public function update(Transaction $transaction, TransactionDTO $dto): Transaction;
 
     /**
      * Delete a transaction.

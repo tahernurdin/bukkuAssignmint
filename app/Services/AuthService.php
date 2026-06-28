@@ -34,7 +34,10 @@ class AuthService
      */
     public function login(LoginDTO $dto): ?string
     {
-        $token = Auth::guard('api')->attempt($dto->toCredentials());
+        $token = Auth::guard('api')->attempt([
+            'email' => $dto->email,
+            'password' => $dto->password,
+        ]);
 
         if (!$token) {
             return null;

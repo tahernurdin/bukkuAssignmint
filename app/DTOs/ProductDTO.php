@@ -2,11 +2,10 @@
 
 namespace App\DTOs;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
- * Immutable carrier for the persistable fields of a product. Create and update
- * share the same fields, so a single factory serves both requests.
+ * Immutable, layer-neutral carrier for the persistable fields of a product.
+ * The FormRequest builds one (request -> DTO); the repository maps it to
+ * columns (DTO -> storage).
  */
 readonly class ProductDTO
 {
@@ -14,28 +13,4 @@ readonly class ProductDTO
         public string $name,
         public string $sku,
     ) {}
-
-    /**
-     * Build from a validated store/update request.
-     */
-    public static function fromRequest(FormRequest $request): self
-    {
-        return new self(
-            name: $request->validated('name'),
-            sku: $request->validated('sku'),
-        );
-    }
-
-    /**
-     * The fillable attributes for persisting the product row.
-     *
-     * @return array<string, mixed>
-     */
-    public function toAttributes(): array
-    {
-        return [
-            'name' => $this->name,
-            'sku' => $this->sku,
-        ];
-    }
 }

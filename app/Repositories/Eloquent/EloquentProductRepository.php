@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\DTOs\ProductDTO;
 use App\Models\Product;
 use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -18,14 +19,20 @@ class EloquentProductRepository implements ProductRepositoryInterface
         return Product::find($id);
     }
 
-    public function create(array $attributes): Product
+    public function create(ProductDTO $dto): Product
     {
-        return Product::create($attributes);
+        return Product::create([
+            'name' => $dto->name,
+            'sku' => $dto->sku,
+        ]);
     }
 
-    public function update(Product $product, array $attributes): Product
+    public function update(Product $product, ProductDTO $dto): Product
     {
-        $product->update($attributes);
+        $product->update([
+            'name' => $dto->name,
+            'sku' => $dto->sku,
+        ]);
 
         return $product;
     }

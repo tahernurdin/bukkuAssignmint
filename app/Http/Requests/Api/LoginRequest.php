@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\DTOs\LoginDTO;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -26,5 +27,16 @@ class LoginRequest extends FormRequest
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
+    }
+
+    /**
+     * Build the DTO for the login attempt.
+     */
+    public function toDto(): LoginDTO
+    {
+        return new LoginDTO(
+            email: $this->validated('email'),
+            password: $this->validated('password'),
+        );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\DTOs\ProductDTO;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProductRequest extends FormRequest
@@ -25,5 +26,16 @@ class StoreProductRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:255', 'unique:products,sku'],
         ];
+    }
+
+    /**
+     * Build the DTO for a new product.
+     */
+    public function toDto(): ProductDTO
+    {
+        return new ProductDTO(
+            name: $this->validated('name'),
+            sku: $this->validated('sku'),
+        );
     }
 }
