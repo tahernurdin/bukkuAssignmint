@@ -36,7 +36,7 @@ class TransactionService
             $transaction = $this->transactions->create($dto->toAttributes());
             $this->ledger->recalculateFrom($dto->productId, $dto->date);
 
-            return $this->transactions->find($transaction->id);
+            return $this->transactions->find($transaction->id)->load('product');
         });
     }
 
@@ -51,7 +51,7 @@ class TransactionService
             $this->transactions->update($transaction, $dto->toAttributes());
             $this->ledger->recalculateFrom($dto->productId, $earliestAffected);
 
-            return $this->transactions->find($transaction->id);
+            return $this->transactions->find($transaction->id)->load('product');
         });
     }
 

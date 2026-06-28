@@ -62,7 +62,7 @@ abstract class AbstractTransactionController extends Controller
             TransactionDTO::forCreate($request, $this->type())
         );
 
-        return $resource::make($transaction->load('product'))
+        return $resource::make($transaction)
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -81,7 +81,7 @@ abstract class AbstractTransactionController extends Controller
             TransactionDTO::forUpdate($request, $transaction)
         );
 
-        return $resource::make($updated->load('product'));
+        return $resource::make($updated);
     }
 
     /**
