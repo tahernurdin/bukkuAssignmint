@@ -1,0 +1,29 @@
+# Dependencies
+/vendor
+/node_modules
+
+# Docker data volumes
+/docker/data
+
+# Environment files
+.env
+.env.backup
+.env.production
+
+# IDE / OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# Build artifacts
+/public/build
+/public/hot
+/storage/*.key
+
+# Git
+.git
+.gitignore
+.gitattributes

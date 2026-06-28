@@ -5,11 +5,13 @@ namespace App\Services;
 use App\DTOs\TransactionDTO;
 use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
+use App\Exceptions\DuplicateTransactionDateException;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
 use App\Services\Inventory\WacLedgerService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,15 +45,24 @@ class TransactionService
 
     /**
      * Record a new transaction and cost the affected chain.
+     *
+     * @throws DuplicateTransactionDateException if the product already has a live
+     *                                           transaction on this date
      */
     public function create(TransactionDTO $dto): Transaction
     {
-        return DB::transaction(function () use ($dto) {
-            $transaction = $this->transactions->create($dto);
-            $this->ledger->recalculateFrom($dto->productId, $dto->date);
+        try {
+            return DB::transaction(function () use ($dto) {
+                $transaction = $this->transactions->create($dto);
+                $this->ledger->recalculateFrom($dto->productId, $dto->date);
 
-            return $this->transactions->find($transaction->id)->load('product');
-        });
+                return $this->transactions->find($transaction->id)->load('product');
+            });
+        } catch (UniqueConstraintViolationException) {
+            // The only unique index on transactions is one live row per
+            // product+date, so a violation here can only be a clashing date.
+            throw new DuplicateTransactionDateException($dto->productId, $dto->date);
+        }
     }
 
     /**
@@ -59,18 +70,25 @@ class TransactionService
      * the wrong type) and recalculate from the earliest affected date — its old
      * date or new date, whichever is earlier. Product and type are immutable, so
      * the update carries only the mutable fields.
+     *
+     * @throws DuplicateTransactionDateException if moving the row would collide
+     *                                           with another live date
      */
     public function update(TransactionType $type, int $id, TransactionUpdateDTO $dto): Transaction
     {
         $transaction = $this->findOfTypeOrFail($type, $id);
 
-        return DB::transaction(function () use ($transaction, $dto) {
-            $earliestAffected = min($transaction->date->toDateString(), $dto->date);
-            $this->transactions->update($transaction, $dto);
-            $this->ledger->recalculateFrom($transaction->product_id, $earliestAffected);
+        try {
+            return DB::transaction(function () use ($transaction, $dto) {
+                $earliestAffected = min($transaction->date->toDateString(), $dto->date);
+                $this->transactions->update($transaction, $dto);
+                $this->ledger->recalculateFrom($transaction->product_id, $earliestAffected);
 
-            return $this->transactions->find($transaction->id)->load('product');
-        });
+                return $this->transactions->find($transaction->id)->load('product');
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw new DuplicateTransactionDateException($transaction->product_id, $dto->date);
+        }
     }
 
     /**

@@ -1,17 +1,8 @@
-### ============================================================
-### Products — CRUD
-### Fields: name, sku
-### ============================================================
-
-### --------------------------------------------------------
-### List all products
 ### --------------------------------------------------------
 GET http://localhost:8080/api/products
 Accept: application/json
 Authorization: Bearer {{auth_token}}
 
-### --------------------------------------------------------
-### Create a product
 ### --------------------------------------------------------
 POST http://localhost:8080/api/products
 Content-Type: application/json
@@ -24,14 +15,10 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### --------------------------------------------------------
-### Get a single product
-### --------------------------------------------------------
 GET http://localhost:8080/api/products/1
 Accept: application/json
 Authorization: Bearer {{auth_token}}
 
-### --------------------------------------------------------
-### Update a product
 ### --------------------------------------------------------
 PATCH http://localhost:8080/api/products/1
 Content-Type: application/json
@@ -43,9 +30,6 @@ Authorization: Bearer {{auth_token}}
     "sku": "WGT-001-V2"
 }
 
-### --------------------------------------------------------
-### Delete a product
-### Returns 204 No Content on success, 409 if product has transactions
 ### --------------------------------------------------------
 DELETE http://localhost:8080/api/products/1
 Accept: application/json

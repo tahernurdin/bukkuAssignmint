@@ -55,8 +55,8 @@ Route → Controller → FormRequest (validation) → DTO → Service → Reposi
 
 | Layer | Responsibility | Key classes |
 |-------|----------------|-------------|
-| Controllers | HTTP only; each transaction endpoint declares just its type + resource | `ProductController`, `AbstractTransactionController` → `PurchaseController`, `SaleController` |
-| FormRequests | Stateless validation | `StoreTransactionRequest`, `UpdateTransactionRequest` |
+| Controllers | HTTP only; thin, one per resource | `ProductController`, `PurchaseController`, `SaleController` |
+| FormRequests | Shape validation (payload only) | `Store{Purchase,Sale}Request`, `Update{Purchase,Sale}Request` |
 | DTOs | Immutable input carriers | `TransactionDTO` |
 | Services | Orchestration & the WAC math | `TransactionService`, `Inventory\WacLedgerService` |
 | Repositories | Persistence boundary (interface + Eloquent impl) | `Contracts\TransactionRepositoryInterface`, `Eloquent\EloquentTransactionRepository` |
@@ -162,7 +162,7 @@ token. Resource responses are wrapped in a `data` key.
 ```bash
 curl -X POST http://127.0.0.1:8000/api/purchases \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"product_id":1,"date":"2022-01-01","quantity":"150","price":"2.00"}'
+  -d '{"product_id":1,"date":"2022-01-01","quantity":"150","buying_price":"2.00"}'
 ```
 
 ```json
@@ -170,7 +170,7 @@ curl -X POST http://127.0.0.1:8000/api/purchases \
   "data": {
     "id": 1, "type": "purchase", "date": "2022-01-01", "product_id": 1,
     "product": { "id": 1, "name": "Widget", "sku": "WIDGET-001" },
-    "quantity": "150.00", "price": "2.00",
+    "quantity": "150.00", "buying_price": "2.00",
     "wac": "2.00", "quantity_on_hand": "150.00", "value_on_hand": "300.00"
   }
 }
@@ -181,7 +181,7 @@ curl -X POST http://127.0.0.1:8000/api/purchases \
 ```bash
 curl -X POST http://127.0.0.1:8000/api/sales \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"product_id":1,"date":"2022-01-07","quantity":"5","price":"5.00"}'
+  -d '{"product_id":1,"date":"2022-01-07","quantity":"5"}'
 ```
 
 ```json
@@ -189,14 +189,15 @@ curl -X POST http://127.0.0.1:8000/api/sales \
   "data": {
     "id": 3, "type": "sale", "date": "2022-01-07", "product_id": 1,
     "product": { "id": 1, "name": "Widget", "sku": "WIDGET-001" },
-    "quantity": "5.00", "price": "5.00",
+    "quantity": "5.00",
     "wac": "1.97", "cost": "9.84",
     "quantity_on_hand": "155.00", "value_on_hand": "305.16"
   }
 }
 ```
 
-`cost` is the cost of goods sold; `wac` is the average unit cost applied.
+A sale carries no price of its own. `cost` is the cost of goods sold; `wac` is the average unit
+cost applied.
 
 ### Error responses
 
@@ -219,12 +220,21 @@ purchase/sale endpoint), `204` (successful delete).
 | Field | Rules |
 |-------|-------|
 | `product_id` | required, must exist |
-| `date` | required, `YYYY-MM-DD`, unique **per product** |
+| `date` | required, `YYYY-MM-DD` |
 | `quantity` | required, numeric, ≤ 2 decimals, > 0 |
-| `price` | required, numeric, ≤ 2 decimals, ≥ 0 |
+| `buying_price` | required, numeric, ≤ 2 decimals, ≥ 0 — **purchases only** (a sale carries no price) |
 
-Stateful rules enforced by the engine (not the request): a sale may not exceed quantity on
-hand at its date. On update, only `date`, `quantity` and `price` may change.
+The FormRequests validate **shape only**. Two rules are *stateful* — they depend on the rest
+of the ledger, not just the payload — so they live in the service/engine, not the request:
+
+- **One live transaction per product per date.** Backed by a DB unique index; a collision is
+  surfaced as `422` on `date` (`DuplicateTransactionDateException`). Soft-deleted rows release
+  their date for reuse.
+- **No overselling.** A sale may not exceed quantity on hand at its date; enforced during WAC
+  recalculation and surfaced as `422` on `quantity`.
+
+On update, only `date`, `quantity` and (for purchases) `buying_price` may change — product and
+type are fixed for the life of a transaction.
 
 ---
 
@@ -237,20 +247,23 @@ hand at its date. On update, only `date`, `quantity` and `price` may change.
 - **Single-tenant.** Transactions are not scoped per user; authentication only gates access.
 - **High precision internally, 2 dp on display.** Avoids rounding drift; differs from the
   PDF's pre-rounded numbers by design (see [How WAC works](#how-wac-works)).
-- **Sale price is recorded for reference only.** Cost of goods sold is derived from WAC,
-  independent of the price the customer paid.
+- **A sale carries no price.** Its cost of goods sold is derived entirely from the WAC at its
+  date, so the sale endpoint takes only product, date and quantity — the selling price the
+  customer paid is out of scope for a costing ledger.
 - **No overselling.** A sale (or a recalculation) that would push quantity on hand below
   zero is rejected with `422` and rolled back.
-- **Purchases and sales share a controller base.** At the HTTP level a purchase and a sale are
-  the same resource — identical create / list / update / delete flow — differing only in the
-  `TransactionType` they record and how they are presented. That shared flow lives once in
-  `AbstractTransactionController` (Template Method); `PurchaseController` and `SaleController`
-  are thin subclasses that declare only their `type()` and `resourceClass()`. The two
-  **resources are kept separate on purpose**: a sale exposes cost of goods sold and a purchase
-  does not, so each retains an explicit, self-documenting response contract (rather than one
-  resource with conditional fields). The primary motivation is removing duplicated plumbing
-  that exists today; a useful consequence is that a further transaction type (e.g. a stock
-  adjustment) would be a new subclass + resource + route, with no edits to existing code.
+- **Purchases and sales are independent stacks.** Each kind has its own controller, request
+  pair and resource (`{Purchase,Sale}Controller`, `Store/Update{Purchase,Sale}Request`,
+  `{Purchase,Sale}Resource`), and all of them are thin: a controller just wires HTTP to
+  `TransactionService` with its `TransactionType`, and a request is a flat list of payload
+  rules. The shared *behaviour* — the DB transaction, WAC recalculation and oversell rollback —
+  lives once in `TransactionService`, not in a controller base, so the duplication across the
+  HTTP classes is only a few lines of declaration with no branching. The **resources are kept
+  separate on purpose**: a sale exposes cost of goods sold and a purchase does not, so each is
+  an explicit, self-documenting response contract rather than one resource with conditional
+  fields. (An earlier draft hoisted the controllers under a Template-Method base; flat,
+  independent classes proved clearer than the indirection for two kinds that diverge in their
+  payload and their response.)
 
 ---
 

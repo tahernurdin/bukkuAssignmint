@@ -2,29 +2,53 @@
 
 namespace App\Http\Requests\Api;
 
+use App\DTOs\TransactionDTO;
 use App\Enums\TransactionType;
+use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Validates a new purchase. A purchase records the unit cost it was bought at
  * (buying_price), which feeds the running weighted-average cost.
  */
-class StorePurchaseRequest extends AbstractStoreTransactionRequest
+class StorePurchaseRequest extends FormRequest
 {
-    protected function transactionType(): TransactionType
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
     {
-        return TransactionType::Purchase;
+        return true;
     }
 
     /**
-     * @return array<string, mixed>
+     * Get the validation rules that apply to the request.
+     *
+     * Shape only. One live transaction per product per date is a stateful domain
+     * rule, enforced by TransactionService (via the DB unique index), not here.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    protected function priceRules(): array
+    public function rules(): array
     {
-        return ['buying_price' => ['required', 'numeric', 'decimal:0,2', 'min:0']];
+        return [
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'date' => ['required', 'date_format:Y-m-d'],
+            'quantity' => ['required', 'numeric', 'decimal:0,2', 'min:0.01'],
+            'buying_price' => ['required', 'numeric', 'decimal:0,2', 'min:0'],
+        ];
     }
 
-    protected function buyingPrice(): ?string
+    /**
+     * Build the DTO for a new purchase.
+     */
+    public function toDto(): TransactionDTO
     {
-        return (string) $this->validated('buying_price');
+        return new TransactionDTO(
+            productId: (int) $this->validated('product_id'),
+            type: TransactionType::Purchase,
+            date: $this->validated('date'),
+            quantity: (string) $this->validated('quantity'),
+            buyingPrice: (string) $this->validated('buying_price'),
+        );
     }
 }
