@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y \
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Allow git to operate in the mounted volume (avoids ownership warning)
+RUN git config --global --add safe.directory /var/www
 
 # Set working directory
 WORKDIR /var/www
