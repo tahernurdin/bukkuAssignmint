@@ -3,11 +3,14 @@
 namespace Tests\Doubles;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionFilterDTO;
 use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * In-memory TransactionRepository for unit tests. Holds Transaction instances
@@ -75,13 +78,22 @@ class InMemoryTransactionRepository implements TransactionRepositoryInterface
         );
     }
 
-    public function listByType(TransactionType $type, ?int $productId = null): Collection
+    public function listByType(TransactionType $type, TransactionFilterDTO $filter): LengthAwarePaginatorContract
     {
-        return $this->sortedByDate(array_filter(
+        $matched = $this->sortedByDate(array_filter(
             $this->transactions,
             fn (Transaction $t) => $t->type === $type
-                && ($productId === null || $t->product_id === $productId),
+                && ($filter->productId === null || $t->product_id === $filter->productId)
+                && ($filter->dateFrom === null || $t->date->toDateString() >= $filter->dateFrom)
+                && ($filter->dateTo === null || $t->date->toDateString() <= $filter->dateTo),
         ));
+
+        return new LengthAwarePaginator(
+            $matched->forPage($filter->page, $filter->perPage)->values(),
+            $matched->count(),
+            $filter->perPage,
+            $filter->page,
+        );
     }
 
     public function snapshotBefore(int $productId, string $date): ?Transaction
@@ -124,7 +136,7 @@ class InMemoryTransactionRepository implements TransactionRepositoryInterface
     }
 
     /**
-     * @param iterable<Transaction> $items
+     * @param  iterable<Transaction>  $items
      * @return Collection<int, Transaction>
      */
     private function sortedByDate(iterable $items): Collection

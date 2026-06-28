@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexProductRequest;
 use App\Http\Requests\Api\StoreProductRequest;
 use App\Http\Requests\Api\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
@@ -16,11 +17,14 @@ class ProductController extends Controller
     public function __construct(private readonly ProductService $products) {}
 
     /**
-     * List all products available to transact against.
+     * List products available to transact against, paginated; optionally
+     * filtered by a name/sku search and a created_at range.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(IndexProductRequest $request): AnonymousResourceCollection
     {
-        return ProductResource::collection($this->products->all());
+        return ProductResource::collection(
+            $this->products->paginate($request->toFilter())
+        );
     }
 
     /**

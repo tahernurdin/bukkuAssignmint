@@ -3,9 +3,11 @@
 namespace App\Repositories\Contracts;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionFilterDTO;
 use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -46,11 +48,12 @@ interface TransactionRepositoryInterface
     public function delete(Transaction $transaction): void;
 
     /**
-     * List transactions of a given type, oldest first, optionally for one product.
+     * A page of transactions of a given type, oldest first, narrowed by the
+     * given filter (optional product and ledger-date range).
      *
-     * @return Collection<int, Transaction>
+     * @return LengthAwarePaginator<int, Transaction>
      */
-    public function listByType(TransactionType $type, ?int $productId = null): Collection;
+    public function listByType(TransactionType $type, TransactionFilterDTO $filter): LengthAwarePaginator;
 
     /**
      * The product's most recent transaction strictly before $date (the state to

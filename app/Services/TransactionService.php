@@ -3,13 +3,14 @@
 namespace App\Services;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionFilterDTO;
 use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Exceptions\DuplicateTransactionDateException;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
 use App\Services\Inventory\WacLedgerService;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,7 @@ class TransactionService
     public function findOfTypeOrFail(TransactionType $type, int $id): Transaction
     {
         return $this->transactions->findOfType($type, $id)
-            ?? throw (new ModelNotFoundException())->setModel(Transaction::class, [$id]);
+            ?? throw (new ModelNotFoundException)->setModel(Transaction::class, [$id]);
     }
 
     /**
@@ -108,12 +109,13 @@ class TransactionService
     }
 
     /**
-     * List transactions of a given type, oldest first, optionally for one product.
+     * List a page of transactions of a given type, oldest first, narrowed by
+     * the given filter.
      *
-     * @return Collection<int, Transaction>
+     * @return LengthAwarePaginator<int, Transaction>
      */
-    public function listByType(TransactionType $type, ?int $productId = null): Collection
+    public function listByType(TransactionType $type, TransactionFilterDTO $filter): LengthAwarePaginator
     {
-        return $this->transactions->listByType($type, $productId);
+        return $this->transactions->listByType($type, $filter);
     }
 }

@@ -143,19 +143,47 @@ token. Resource responses are wrapped in a `data` key.
 | POST | `/logout` | Invalidate the current token |
 | POST | `/refresh` | Refresh the token |
 | GET | `/me` | Current user |
-| GET | `/products` | List products |
+| GET | `/products` | List products (paginated, filterable) |
 | POST | `/products` | Create a product |
 | GET | `/products/{id}` | Show a product |
 | PATCH | `/products/{id}` | Update a product |
 | DELETE | `/products/{id}` | Delete a product (409 if it has transactions) |
-| GET | `/purchases` | List purchases (oldest first) |
+| GET | `/purchases` | List purchases (oldest first, paginated, filterable) |
 | POST | `/purchases` | Record a purchase |
 | PATCH | `/purchases/{id}` | Update a purchase *(bonus)* |
 | DELETE | `/purchases/{id}` | Delete a purchase *(bonus)* |
-| GET | `/sales` | List sales **with costing** (oldest first) |
+| GET | `/sales` | List sales **with costing** (oldest first, paginated, filterable) |
 | POST | `/sales` | Record a sale |
 | PATCH | `/sales/{id}` | Update a sale *(bonus)* |
 | DELETE | `/sales/{id}` | Delete a sale *(bonus)* |
+
+### Listing, filtering & pagination
+
+All three listing endpoints are **length-aware paginated** and accept filters as query
+parameters. Page size defaults to **15** and is capped at **100**; pass `page` to walk pages.
+
+| Endpoint | Filters |
+|----------|---------|
+| `/products` | `search` (partial match on name or sku), `created_from`, `created_to` (`created_at` range, `Y-m-d`) |
+| `/purchases`, `/sales` | `product_id` (must exist), `date_from`, `date_to` (ledger-date range, `Y-m-d`) |
+
+```bash
+curl "http://127.0.0.1:8000/api/purchases?product_id=1&date_from=2022-01-01&date_to=2022-01-31&per_page=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+A paginated list carries `links` and `meta` alongside `data`:
+
+```json
+{
+  "data": [ /* ... */ ],
+  "links": { "first": "...", "last": "...", "prev": null, "next": "...?page=2" },
+  "meta": { "current_page": 1, "per_page": 15, "total": 42, "last_page": 3 }
+}
+```
+
+Invalid filters are rejected with `422` (e.g. an unknown `product_id`, `per_page` above 100, or
+`created_to` earlier than `created_from`).
 
 ### Record a purchase
 

@@ -3,10 +3,12 @@
 namespace App\Repositories\Eloquent;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionFilterDTO;
 use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class EloquentTransactionRepository implements TransactionRepositoryInterface
@@ -42,15 +44,17 @@ class EloquentTransactionRepository implements TransactionRepositoryInterface
         $transaction->delete();
     }
 
-    public function listByType(TransactionType $type, ?int $productId = null): Collection
+    public function listByType(TransactionType $type, TransactionFilterDTO $filter): LengthAwarePaginator
     {
         return Transaction::query()
             ->where('type', $type)
-            ->when($productId, fn ($query) => $query->forProduct($productId))
+            ->when($filter->productId, fn ($query) => $query->forProduct($filter->productId))
+            ->when($filter->dateFrom, fn ($query) => $query->where('date', '>=', $filter->dateFrom))
+            ->when($filter->dateTo, fn ($query) => $query->where('date', '<=', $filter->dateTo))
             ->with('product')
             ->orderBy('date')
             ->orderBy('id')
-            ->get();
+            ->paginate($filter->perPage, ['*'], 'page', $filter->page);
     }
 
     public function snapshotBefore(int $productId, string $date): ?Transaction

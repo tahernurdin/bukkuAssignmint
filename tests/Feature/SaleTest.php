@@ -9,8 +9,8 @@ use Tests\TestCase;
 
 class SaleTest extends TestCase
 {
-    use RefreshDatabase;
     use InteractsWithAuth;
+    use RefreshDatabase;
 
     /**
      * Seed the assignment's two purchases (150 @ 2.00, then 10 @ 1.50).
@@ -75,6 +75,43 @@ class SaleTest extends TestCase
             ->assertStatus(200)
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.cost', '9.84');
+    }
+
+    public function test_listing_sales_is_paginated_with_meta(): void
+    {
+        [$product, $headers] = $this->seedAssignmentStock();
+
+        $this->withHeaders($headers)->postJson('/api/sales', [
+            'product_id' => $product->id, 'date' => '2022-01-07', 'quantity' => '5',
+        ]);
+
+        $this->withHeaders($headers)->getJson('/api/sales')
+            ->assertStatus(200)
+            ->assertJsonStructure(['data', 'links', 'meta' => ['current_page', 'per_page', 'total', 'last_page']])
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('meta.per_page', 15);
+    }
+
+    public function test_sales_can_be_filtered_by_product(): void
+    {
+        $headers = $this->authHeaders();
+
+        $a = Product::factory()->create();
+        $b = Product::factory()->create();
+
+        foreach ([$a, $b] as $product) {
+            $this->withHeaders($headers)->postJson('/api/purchases', [
+                'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '20', 'buying_price' => '2.00',
+            ])->assertStatus(201);
+            $this->withHeaders($headers)->postJson('/api/sales', [
+                'product_id' => $product->id, 'date' => '2022-01-02', 'quantity' => '5',
+            ])->assertStatus(201);
+        }
+
+        $this->withHeaders($headers)->getJson("/api/sales?product_id={$a->id}")
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.product_id', $a->id);
     }
 
     public function test_it_rejects_a_sale_that_exceeds_quantity_on_hand(): void

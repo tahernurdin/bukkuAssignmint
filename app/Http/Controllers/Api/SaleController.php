@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexTransactionRequest;
 use App\Http\Requests\Api\StoreSaleRequest;
 use App\Http\Requests\Api\UpdateSaleRequest;
 use App\Http\Resources\SaleResource;
@@ -26,12 +27,13 @@ class SaleController extends Controller
     public function __construct(private readonly TransactionService $transactions) {}
 
     /**
-     * List sales (with costing), oldest first.
+     * List sales (with costing), oldest first, paginated; optionally filtered
+     * by product and a ledger-date range.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(IndexTransactionRequest $request): AnonymousResourceCollection
     {
         return SaleResource::collection(
-            $this->transactions->listByType(TransactionType::Sale)
+            $this->transactions->listByType(TransactionType::Sale, $request->toFilter())
         );
     }
 

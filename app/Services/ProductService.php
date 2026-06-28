@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\DTOs\ProductDTO;
+use App\DTOs\ProductFilterDTO;
 use App\Exceptions\DuplicateSkuException;
 use App\Exceptions\ProductHasTransactionsException;
 use App\Models\Product;
 use App\Repositories\Contracts\ProductRepositoryInterface;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
@@ -19,13 +20,13 @@ class ProductService
     public function __construct(private readonly ProductRepositoryInterface $products) {}
 
     /**
-     * List all products, alphabetically.
+     * List a page of products, alphabetically, narrowed by the given filter.
      *
-     * @return Collection<int, Product>
+     * @return LengthAwarePaginator<int, Product>
      */
-    public function all(): Collection
+    public function paginate(ProductFilterDTO $filter): LengthAwarePaginator
     {
-        return $this->products->all();
+        return $this->products->paginate($filter);
     }
 
     /**
@@ -34,7 +35,7 @@ class ProductService
     public function findById(int $id): Product
     {
         return $this->products->find($id)
-            ?? throw (new ModelNotFoundException())->setModel(Product::class, [$id]);
+            ?? throw (new ModelNotFoundException)->setModel(Product::class, [$id]);
     }
 
     /**

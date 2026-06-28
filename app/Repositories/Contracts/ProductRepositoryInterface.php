@@ -3,8 +3,9 @@
 namespace App\Repositories\Contracts;
 
 use App\DTOs\ProductDTO;
+use App\DTOs\ProductFilterDTO;
 use App\Models\Product;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Persistence boundary for products. Services depend on this interface rather
@@ -13,11 +14,11 @@ use Illuminate\Database\Eloquent\Collection;
 interface ProductRepositoryInterface
 {
     /**
-     * All products, alphabetically.
+     * A page of products, alphabetically, narrowed by the given filter.
      *
-     * @return Collection<int, Product>
+     * @return LengthAwarePaginator<int, Product>
      */
-    public function all(): Collection;
+    public function paginate(ProductFilterDTO $filter): LengthAwarePaginator;
 
     /**
      * Find a product by id, or null if it does not exist.

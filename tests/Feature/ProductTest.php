@@ -11,8 +11,8 @@ use Tests\TestCase;
 
 class ProductTest extends TestCase
 {
-    use RefreshDatabase;
     use InteractsWithAuth;
+    use RefreshDatabase;
 
     public function test_listing_products_requires_authentication(): void
     {
@@ -28,6 +28,83 @@ class ProductTest extends TestCase
             ->assertStatus(200)
             ->assertJsonCount(3, 'data')
             ->assertJsonStructure(['data' => [['id', 'name', 'sku']]]);
+    }
+
+    public function test_listing_products_is_paginated_with_meta(): void
+    {
+        Product::factory()->count(3)->create();
+
+        $this->withHeaders($this->authHeaders())
+            ->getJson('/api/products')
+            ->assertStatus(200)
+            ->assertJsonStructure(['data', 'links' => ['first', 'last', 'prev', 'next'], 'meta' => ['current_page', 'per_page', 'total', 'last_page']])
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.per_page', 15);
+    }
+
+    public function test_products_can_be_paged(): void
+    {
+        Product::factory()->count(20)->create();
+        $headers = $this->authHeaders();
+
+        $this->withHeaders($headers)->getJson('/api/products?per_page=5')
+            ->assertStatus(200)
+            ->assertJsonCount(5, 'data')
+            ->assertJsonPath('meta.total', 20)
+            ->assertJsonPath('meta.last_page', 4)
+            ->assertJsonPath('meta.current_page', 1);
+
+        $this->withHeaders($headers)->getJson('/api/products?per_page=5&page=2')
+            ->assertStatus(200)
+            ->assertJsonCount(5, 'data')
+            ->assertJsonPath('meta.current_page', 2);
+    }
+
+    public function test_products_can_be_searched_by_name_or_sku(): void
+    {
+        Product::factory()->create(['name' => 'Blue Widget', 'sku' => 'BLU-1']);
+        Product::factory()->create(['name' => 'Red Gadget', 'sku' => 'RED-1']);
+        $headers = $this->authHeaders();
+
+        // Partial match on name.
+        $this->withHeaders($headers)->getJson('/api/products?search=widget')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.sku', 'BLU-1');
+
+        // Partial match on sku.
+        $this->withHeaders($headers)->getJson('/api/products?search=RED')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Red Gadget');
+    }
+
+    public function test_products_can_be_filtered_by_created_at_range(): void
+    {
+        Product::factory()->create(['name' => 'Old', 'sku' => 'OLD-1', 'created_at' => '2022-01-01 10:00:00']);
+        Product::factory()->create(['name' => 'New', 'sku' => 'NEW-1', 'created_at' => '2022-06-15 10:00:00']);
+
+        $this->withHeaders($this->authHeaders())
+            ->getJson('/api/products?created_from=2022-06-01&created_to=2022-06-30')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.sku', 'NEW-1');
+    }
+
+    public function test_per_page_is_capped_at_100(): void
+    {
+        $this->withHeaders($this->authHeaders())
+            ->getJson('/api/products?per_page=101')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('per_page');
+    }
+
+    public function test_created_to_before_created_from_is_rejected(): void
+    {
+        $this->withHeaders($this->authHeaders())
+            ->getJson('/api/products?created_from=2022-06-30&created_to=2022-01-01')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('created_to');
     }
 
     public function test_it_shows_a_single_product(): void

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexTransactionRequest;
 use App\Http\Requests\Api\StorePurchaseRequest;
 use App\Http\Requests\Api\UpdatePurchaseRequest;
 use App\Http\Resources\PurchaseResource;
@@ -22,12 +23,13 @@ class PurchaseController extends Controller
     public function __construct(private readonly TransactionService $transactions) {}
 
     /**
-     * List purchases, oldest first.
+     * List purchases, oldest first, paginated; optionally filtered by product
+     * and a ledger-date range.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(IndexTransactionRequest $request): AnonymousResourceCollection
     {
         return PurchaseResource::collection(
-            $this->transactions->listByType(TransactionType::Purchase)
+            $this->transactions->listByType(TransactionType::Purchase, $request->toFilter())
         );
     }
 

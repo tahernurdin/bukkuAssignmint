@@ -3,15 +3,25 @@
 namespace App\Repositories\Eloquent;
 
 use App\DTOs\ProductDTO;
+use App\DTOs\ProductFilterDTO;
 use App\Models\Product;
 use App\Repositories\Contracts\ProductRepositoryInterface;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class EloquentProductRepository implements ProductRepositoryInterface
 {
-    public function all(): Collection
+    public function paginate(ProductFilterDTO $filter): LengthAwarePaginator
     {
-        return Product::with('latestTransaction')->orderBy('name')->get();
+        return Product::with('latestTransaction')
+            ->when($filter->search, fn ($query) => $query->where(
+                fn ($search) => $search
+                    ->where('name', 'like', "%{$filter->search}%")
+                    ->orWhere('sku', 'like', "%{$filter->search}%")
+            ))
+            ->when($filter->createdFrom, fn ($query) => $query->whereDate('created_at', '>=', $filter->createdFrom))
+            ->when($filter->createdTo, fn ($query) => $query->whereDate('created_at', '<=', $filter->createdTo))
+            ->orderBy('name')
+            ->paginate($filter->perPage, ['*'], 'page', $filter->page);
     }
 
     public function find(int $id): ?Product
