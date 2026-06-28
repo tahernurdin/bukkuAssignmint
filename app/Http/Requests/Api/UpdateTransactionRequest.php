@@ -38,7 +38,9 @@ class UpdateTransactionRequest extends FormRequest
                 'required',
                 'date_format:Y-m-d',
                 Rule::unique('transactions')
-                    ->where(fn ($query) => $query->where('product_id', $transaction->product_id))
+                    ->where(fn ($query) => $query
+                        ->where('product_id', $transaction->product_id)
+                        ->whereNull('deleted_at'))
                     ->ignore($transaction->id),
             ],
             'quantity' => ['required', 'numeric', 'decimal:0,2', 'min:0.01'],

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A single-product purchase or sale, plus a snapshot of the resulting
@@ -27,6 +28,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class Transaction extends Model
 {
+    // Deletes are soft: a transaction is a financial record we keep for audit.
+    // The deleted_at IS NULL scope also drops dead rows out of every WAC read
+    // (find, listByType, snapshotBefore, chainFrom) so the ledger replay ignores
+    // them without any extra wiring.
+    use SoftDeletes;
+
     /**
      * Get the attributes that should be cast.
      *

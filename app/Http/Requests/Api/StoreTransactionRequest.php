@@ -36,9 +36,13 @@ class StoreTransactionRequest extends FormRequest
             'date' => [
                 'required',
                 'date_format:Y-m-d',
-                // One transaction per product per date (each product is its own ledger).
+                // One *live* transaction per product per date (each product is its
+                // own ledger). Soft-deleted rows don't count, so a date frees up
+                // again once its transaction is deleted.
                 Rule::unique('transactions')->where(
-                    fn ($query) => $query->where('product_id', $this->input('product_id'))
+                    fn ($query) => $query
+                        ->where('product_id', $this->input('product_id'))
+                        ->whereNull('deleted_at')
                 ),
             ],
             'quantity' => ['required', 'numeric', 'decimal:0,2', 'min:0.01'],
