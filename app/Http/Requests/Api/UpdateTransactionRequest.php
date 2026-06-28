@@ -46,11 +46,11 @@ class UpdateTransactionRequest extends FormRequest
     }
 
     /**
-     * The transaction bound to the route, regardless of whether the segment is
-     * named {purchase} or {sale}.
+     * The transaction bound to the route. Both the purchases and sales endpoints
+     * bind it under the {transaction} segment (see routes/api.php).
      */
     public function routeTransaction(): Transaction
     {
-        return $this->route('purchase') ?? $this->route('sale');
+        return $this->route('transaction');
     }
 }

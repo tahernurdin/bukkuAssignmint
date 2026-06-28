@@ -24,8 +24,12 @@ Route::middleware('auth:api')->group(function () {
 
     // Purchases and sales. update/destroy are the bonus features; the base
     // requirement only needs index + store.
-    Route::apiResource('purchases', PurchaseController::class)->except(['show']);
-    Route::apiResource('sales', SaleController::class)->except(['show']);
+    Route::apiResource('purchases', PurchaseController::class)
+        ->parameters(['purchases' => 'transaction'])
+        ->except(['show']);
+    Route::apiResource('sales', SaleController::class)
+        ->parameters(['sales' => 'transaction'])
+        ->except(['show']);
 
     // Demonstration of Role Middleware
     Route::middleware('role:admin')->get('/admin-dashboard', function () {

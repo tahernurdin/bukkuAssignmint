@@ -54,7 +54,7 @@ Route → Controller → FormRequest (validation) → DTO → Service → Reposi
 
 | Layer | Responsibility | Key classes |
 |-------|----------------|-------------|
-| Controllers | HTTP only; pick the transaction type | `ProductController`, `PurchaseController`, `SaleController` |
+| Controllers | HTTP only; each transaction endpoint declares just its type + resource | `ProductController`, `AbstractTransactionController` → `PurchaseController`, `SaleController` |
 | FormRequests | Stateless validation | `StoreTransactionRequest`, `UpdateTransactionRequest` |
 | DTOs | Immutable input carriers | `TransactionDTO` |
 | Services | Orchestration & the WAC math | `TransactionService`, `Inventory\WacLedgerService` |
@@ -238,6 +238,16 @@ hand at its date. On update, only `date`, `quantity` and `price` may change.
   independent of the price the customer paid.
 - **No overselling.** A sale (or a recalculation) that would push quantity on hand below
   zero is rejected with `422` and rolled back.
+- **Purchases and sales share a controller base.** At the HTTP level a purchase and a sale are
+  the same resource — identical create / list / update / delete flow — differing only in the
+  `TransactionType` they record and how they are presented. That shared flow lives once in
+  `AbstractTransactionController` (Template Method); `PurchaseController` and `SaleController`
+  are thin subclasses that declare only their `type()` and `resourceClass()`. The two
+  **resources are kept separate on purpose**: a sale exposes cost of goods sold and a purchase
+  does not, so each retains an explicit, self-documenting response contract (rather than one
+  resource with conditional fields). The primary motivation is removing duplicated plumbing
+  that exists today; a useful consequence is that a further transaction type (e.g. a stock
+  adjustment) would be a new subclass + resource + route, with no edits to existing code.
 
 ---
 
