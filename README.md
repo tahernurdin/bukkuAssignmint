@@ -108,19 +108,21 @@ products: Widget, Gadget, Gizmo, Doohickey, Thingamajig.
 
 ## Authentication
 
-JWT (Bearer). Register or log in, then send `Authorization: Bearer <token>` on every other
-endpoint.
+> **Scope note:** User registration, login, logout, and token management are **outside the
+> scope of this assignment**. The auth endpoints (`/register`, `/login`, `/logout`, `/refresh`,
+> `/me`) exist solely to simulate a realistic JWT-gated API so the costing endpoints can be
+> exercised. They carry no production-grade validation (e.g. the register endpoint accepts an
+> arbitrary role without restriction). In a real system, identity management would be handled
+> by a dedicated auth service.
+
+JWT (Bearer). Use the seeded user or register a new one, then send
+`Authorization: Bearer <token>` on every costing endpoint.
 
 ```bash
-# Register
-curl -X POST http://127.0.0.1:8000/api/register \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"Demo","email":"demo@example.com","password":"password123"}'
-
-# Login → returns the token
+# Login → returns the token (seeded user: test@example.com / password)
 curl -X POST http://127.0.0.1:8000/api/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"demo@example.com","password":"password123"}'
+  -d '{"email":"test@example.com","password":"password"}'
 ```
 
 ```json
