@@ -1,0 +1,104 @@
+services:
+  # -------------------------------------------------------
+  # Nginx - Web Server
+  # -------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: bukku_nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      php:
+        condition: service_started
+    networks:
+      - bukku
+
+  # -------------------------------------------------------
+  # PHP-FPM - Application Server
+  # -------------------------------------------------------
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: bukku_php
+    restart: unless-stopped
+    volumes:
+      - .:/var/www
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-bukku}
+      - DB_USERNAME=${DB_USERNAME:-bukku}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+    networks:
+      - bukku
+
+  # -------------------------------------------------------
+  # MySQL - Database Server
+  # -------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: bukku_mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_EXTERNAL_PORT:-3307}:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-bukku}
+      MYSQL_USER: ${DB_USERNAME:-bukku}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    volumes:
+      - ./docker/data/mysql:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - bukku
+
+  # -------------------------------------------------------
+  # Composer - Vendor Installation
+  # Runs once on `docker compose up` to install dependencies,
+  # then exits. Other services wait for PHP to be ready, not
+  # this container, but it ensures vendors exist on first boot.
+  # -------------------------------------------------------
+  composer:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: bukku_composer
+    restart: "no"
+    volumes:
+      - .:/var/www
+    working_dir: /var/www
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        echo "==> Installing Composer dependencies..."
+        composer install --no-interaction --prefer-dist --optimize-autoloader
+        echo "==> Ensuring .env exists..."
+        php -r "file_exists('.env') || copy('.env.example', '.env');"
+        echo "==> Generating app key if needed..."
+        php artisan key:generate --no-interaction --force
+        echo "==> Running migrations..."
+        php artisan migrate --no-interaction --force
+        echo "==> Dependencies installed and app bootstrapped!"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bukku
+
+networks:
+  bukku:
+    driver: bridge

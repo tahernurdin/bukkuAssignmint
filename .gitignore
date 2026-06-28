@@ -22,6 +22,8 @@
 /storage/*.key
 /storage/pail
 /vendor
+/docker/data/*
+!/docker/data/.gitkeep
 _ide_helper.php
 Homestead.json
 Homestead.yaml
