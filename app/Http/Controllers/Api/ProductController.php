@@ -9,7 +9,7 @@ use App\Http\Resources\ProductResource;
 use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class ProductController extends Controller
 {

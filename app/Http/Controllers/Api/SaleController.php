@@ -10,7 +10,7 @@ use App\Http\Resources\SaleResource;
 use App\Services\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Sale endpoints. Each method wires HTTP to TransactionService, which owns the
