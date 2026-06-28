@@ -2,19 +2,20 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Exceptions\Concerns\RendersAsValidationError;
 use RuntimeException;
 
 /**
  * Thrown when a sale (or a recalculation triggered by an out-of-order insert,
  * update, or delete) would drive a product's quantity on hand below zero.
  *
- * Self-renders as HTTP 422 using the same JSON shape Laravel uses for
- * validation errors, so API clients can handle it uniformly.
+ * Self-renders as HTTP 422 in Laravel's validation-error shape, so API clients
+ * can handle it uniformly.
  */
 class InsufficientStockException extends RuntimeException
 {
+    use RendersAsValidationError;
+
     public function __construct(
         public readonly int $productId,
         public readonly string $date,
@@ -30,16 +31,13 @@ class InsufficientStockException extends RuntimeException
         ));
     }
 
-    /**
-     * Render the exception into an HTTP response.
-     */
-    public function render(Request $request): JsonResponse
+    protected function validationField(): string
     {
-        return response()->json([
-            'message' => 'Insufficient stock to record this sale.',
-            'errors' => [
-                'quantity' => [$this->getMessage()],
-            ],
-        ], 422);
+        return 'quantity';
+    }
+
+    protected function validationMessage(): string
+    {
+        return 'Insufficient stock to record this sale.';
     }
 }

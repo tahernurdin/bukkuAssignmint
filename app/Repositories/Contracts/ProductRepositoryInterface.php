@@ -43,4 +43,11 @@ interface ProductRepositoryInterface
      * Whether the product has any transactions recorded against it.
      */
     public function hasTransactions(Product $product): bool;
+
+    /**
+     * Whether another live product already uses this sku. Soft-deleted products
+     * are ignored, so their sku is free for reuse. Pass $ignoreId to exclude the
+     * product being updated, so it can keep its own sku.
+     */
+    public function existsLiveSku(string $sku, ?int $ignoreId = null): bool;
 }

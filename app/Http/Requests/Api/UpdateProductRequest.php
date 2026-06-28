@@ -4,7 +4,6 @@ namespace App\Http\Requests\Api;
 
 use App\DTOs\ProductDTO;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateProductRequest extends FormRequest
 {
@@ -23,14 +22,11 @@ class UpdateProductRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Shape only. Sku uniqueness is a stateful domain rule, enforced in
+        // ProductService (and backstopped by a DB index), not here.
         return [
             'name' => ['required', 'string', 'max:255'],
-            'sku' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('products', 'sku')->ignore($this->route('id')),
-            ],
+            'sku' => ['required', 'string', 'max:255'],
         ];
     }
 

@@ -88,6 +88,19 @@ class ProductTest extends TestCase
         $this->assertDatabaseHas('products', ['id' => $product->id, 'name' => 'New']);
     }
 
+    public function test_it_rejects_updating_to_another_products_sku(): void
+    {
+        Product::factory()->create(['sku' => 'TAKEN-1']);
+        $product = Product::factory()->create(['sku' => 'MINE-1']);
+
+        $this->withHeaders($this->authHeaders())
+            ->patchJson("/api/products/{$product->id}", ['name' => 'X', 'sku' => 'TAKEN-1'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('sku');
+
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'sku' => 'MINE-1']);
+    }
+
     public function test_it_deletes_a_product_with_no_transactions(): void
     {
         $product = Product::factory()->create();
@@ -96,7 +109,25 @@ class ProductTest extends TestCase
             ->deleteJson("/api/products/{$product->id}")
             ->assertStatus(204);
 
-        $this->assertDatabaseMissing('products', ['id' => $product->id]);
+        // Soft delete: the row is kept (for audit) but no longer listed/shown.
+        $this->assertSoftDeleted('products', ['id' => $product->id]);
+        $this->withHeaders($this->authHeaders())
+            ->getJson("/api/products/{$product->id}")
+            ->assertStatus(404);
+    }
+
+    public function test_a_sku_can_be_reused_after_its_product_is_deleted(): void
+    {
+        $product = Product::factory()->create(['sku' => 'REUSE-1']);
+
+        $this->withHeaders($this->authHeaders())
+            ->deleteJson("/api/products/{$product->id}")
+            ->assertStatus(204);
+
+        // The sku is free again now that its product is soft-deleted.
+        $this->withHeaders($this->authHeaders())
+            ->postJson('/api/products', ['name' => 'Fresh', 'sku' => 'REUSE-1'])
+            ->assertStatus(201);
     }
 
     public function test_it_refuses_to_delete_a_product_that_has_transactions(): void

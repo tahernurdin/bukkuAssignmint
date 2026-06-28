@@ -38,6 +38,30 @@ class TransactionSoftDeleteTest extends TestCase
         ])->assertStatus(201);
     }
 
+    public function test_a_date_can_be_deleted_and_recreated_repeatedly(): void
+    {
+        $product = Product::factory()->create();
+        $headers = $this->authHeaders();
+
+        // Each cycle leaves another soft-deleted row on the same product+date.
+        // The live-unique index must tolerate the pile of dead rows (their
+        // active_flag is NULL, so they don't collide) while still allowing the
+        // next live one.
+        for ($i = 0; $i < 3; $i++) {
+            $id = $this->withHeaders($headers)->postJson('/api/purchases', [
+                'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            ])->assertStatus(201)->json('data.id');
+
+            $this->withHeaders($headers)->deleteJson("/api/purchases/{$id}")
+                ->assertStatus(204);
+        }
+
+        // One more live transaction sticks after all those delete cycles.
+        $this->withHeaders($headers)->postJson('/api/purchases', [
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '5', 'price' => '3.00',
+        ])->assertStatus(201);
+    }
+
     public function test_a_second_live_transaction_for_the_same_date_is_still_rejected(): void
     {
         $product = Product::factory()->create();

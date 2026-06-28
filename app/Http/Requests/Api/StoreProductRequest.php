@@ -22,9 +22,11 @@ class StoreProductRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Shape only. Sku uniqueness is a stateful domain rule, enforced in
+        // ProductService (and backstopped by a DB index), not here.
         return [
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:255', 'unique:products,sku'],
+            'sku' => ['required', 'string', 'max:255'],
         ];
     }
 

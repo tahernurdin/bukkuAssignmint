@@ -46,4 +46,13 @@ class EloquentProductRepository implements ProductRepositoryInterface
     {
         return $product->transactions()->exists();
     }
+
+    public function existsLiveSku(string $sku, ?int $ignoreId = null): bool
+    {
+        // The SoftDeletes scope already excludes deleted products, so this only
+        // ever sees live rows.
+        return Product::where('sku', $sku)
+            ->when($ignoreId !== null, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->exists();
+    }
 }

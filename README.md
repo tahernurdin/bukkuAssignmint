@@ -18,6 +18,7 @@ and reports the cost of goods sold; it does not model carts, orders, customers o
 - [Validation rules](#validation-rules)
 - [Assumptions & design decisions](#assumptions--design-decisions)
 - [Bonus features](#bonus-features)
+- [Scaling & performance](#scaling--performance)
 - [Testing](#testing)
 
 ---
@@ -261,6 +262,43 @@ Both optional bonuses are implemented, and both reuse the single recalculation e
 2. **Update / delete.** Existing transactions can be updated or deleted; downstream rows are
    recosted. If the change would cause a downstream sale to oversell, the whole operation
    rolls back.
+
+---
+
+## Scaling & performance
+
+A backdated insert (or an update/delete) re-costs the transactions that follow it. The obvious
+worry is "what if there are 100,000 rows — does every write recompute all of them?" It does not.
+
+**The recompute is already bounded to the rows a change can actually affect:**
+
+- **Per product.** `recalculateFrom($productId, $fromDate)` replays a *single* product's ledger,
+  not the global table. Each product is an independent chain.
+- **Only the affected tail.** It seeds from the snapshot of the row immediately before the edited
+  date (`snapshotBefore`) and replays forward (`chainFrom`) — so editing near the end of a chain
+  rewrites a handful of rows. The full-chain `O(n)` case only happens when you edit at the very
+  *start* of one product's history. This is the "efficiently" the bonus asks for: it's an
+  **algorithmic** bound, not a faster CPU.
+- **Atomic and consistent.** The whole replay runs inside `DB::transaction` with `lockForUpdate`
+  row locks, so a reader never sees half-recosted state and concurrent writers can't interleave.
+
+**Where the cost actually is.** The WAC math is a cheap linear pass (a few BCMath ops per row).
+The dominant cost is the **writes**: `WacLedgerService::persist()` currently issues one
+`UPDATE` per row. At the assignment's scale this is sub-second, so the engine runs
+**synchronously** — which is the right call for a costing ledger, where reading back the correct
+cost immediately is the entire point.
+
+**If a single product's chain grew into the hundreds of thousands**, the fix order would be:
+
+1. **Batch the writes first.** Replace the per-row `save()` loop with one bulk `upsert`, turning
+   N `UPDATE`s into one round trip. This keeps the operation synchronous and correct and removes
+   the real bottleneck. *(Not implemented — it would be the first optimisation if profiling
+   demanded it.)*
+2. **Only then consider a queue.** Moving recompute to a background job does **not** reduce the
+   work — it just hides the latency, at the cost of eventual consistency (a sale's cost is briefly
+   unknown, needing a `pending` state and a job-status endpoint) and per-product job
+   serialisation to stay correct. That trade isn't justified at this scale, so it is deliberately
+   **not** built.
 
 ---
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\ProductDTO;
+use App\Exceptions\DuplicateSkuException;
 use App\Exceptions\ProductHasTransactionsException;
 use App\Models\Product;
 use App\Repositories\Contracts\ProductRepositoryInterface;
@@ -38,18 +39,42 @@ class ProductService
 
     /**
      * Create a product.
+     *
+     * @throws DuplicateSkuException
      */
     public function create(ProductDTO $dto): Product
     {
+        $this->guardSkuIsUnique($dto->sku);
+
         return $this->products->create($dto);
     }
 
     /**
      * Update an existing product.
+     *
+     * @throws DuplicateSkuException
      */
     public function update(int $id, ProductDTO $dto): Product
     {
-        return $this->products->update($this->findById($id), $dto);
+        $product = $this->findById($id);
+
+        $this->guardSkuIsUnique($dto->sku, $product->id);
+
+        return $this->products->update($product, $dto);
+    }
+
+    /**
+     * Reject a sku already taken by another live product. The DB carries a
+     * matching unique index as the race-safe backstop; this check is what turns
+     * a collision into a clean 422 instead of a constraint-violation 500.
+     *
+     * @throws DuplicateSkuException
+     */
+    private function guardSkuIsUnique(string $sku, ?int $ignoreId = null): void
+    {
+        if ($this->products->existsLiveSku($sku, $ignoreId)) {
+            throw new DuplicateSkuException($sku);
+        }
     }
 
     /**
