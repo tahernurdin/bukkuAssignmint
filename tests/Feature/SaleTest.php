@@ -23,11 +23,11 @@ class SaleTest extends TestCase
         $headers = $this->authHeaders();
 
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '150', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '150', 'buying_price' => '2.00',
         ])->assertStatus(201);
 
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '10', 'price' => '1.50',
+            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '10', 'buying_price' => '1.50',
         ])->assertStatus(201);
 
         return [$product, $headers];
@@ -39,8 +39,9 @@ class SaleTest extends TestCase
 
         // Sell 5 units. WAC is 315/160 = 1.96875 (displayed 1.97); cost 9.84375
         // (displayed 9.84); 155 units remain worth 305.15625 (displayed 305.16).
+        // A sale carries no price of its own — only product, date and quantity.
         $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-07', 'quantity' => '5', 'price' => '5.00',
+            'product_id' => $product->id, 'date' => '2022-01-07', 'quantity' => '5',
         ])
             ->assertStatus(201)
             ->assertJsonPath('data.type', 'sale')
@@ -50,12 +51,24 @@ class SaleTest extends TestCase
             ->assertJsonPath('data.value_on_hand', '305.16');
     }
 
+    public function test_a_sale_response_carries_no_price(): void
+    {
+        [$product, $headers] = $this->seedAssignmentStock();
+
+        $this->withHeaders($headers)->postJson('/api/sales', [
+            'product_id' => $product->id, 'date' => '2022-01-07', 'quantity' => '5',
+        ])
+            ->assertStatus(201)
+            ->assertJsonMissingPath('data.price')
+            ->assertJsonMissingPath('data.buying_price');
+    }
+
     public function test_it_lists_sales_with_costing(): void
     {
         [$product, $headers] = $this->seedAssignmentStock();
 
         $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-07', 'quantity' => '5', 'price' => '5.00',
+            'product_id' => $product->id, 'date' => '2022-01-07', 'quantity' => '5',
         ]);
 
         $this->withHeaders($headers)->getJson('/api/sales')
@@ -70,11 +83,11 @@ class SaleTest extends TestCase
         $headers = $this->authHeaders();
 
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ])->assertStatus(201);
 
         $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-02', 'quantity' => '15', 'price' => '3.00',
+            'product_id' => $product->id, 'date' => '2022-01-02', 'quantity' => '15',
         ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('quantity');

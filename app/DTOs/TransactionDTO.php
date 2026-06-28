@@ -20,6 +20,6 @@ readonly class TransactionDTO
         public TransactionType $type,
         public string $date,
         public string $quantity,
-        public string $price,
+        public ?string $buyingPrice, // unit purchase cost; null for sales
     ) {}
 }

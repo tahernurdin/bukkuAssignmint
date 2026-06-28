@@ -8,14 +8,41 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Validates a new purchase or sale. The transaction *type* is decided by the
- * endpoint (purchase vs sale controller), not the payload.
+ * Shared validation for recording a new transaction. The fields common to both
+ * kinds (product, date, quantity) live here; a concrete request adds whatever
+ * price field its kind carries and names the transaction type.
  *
- * Note: "cannot oversell" is a stateful rule that depends on the WAC chain at
- * the transaction's date, so it is enforced in the engine, not here.
+ * The transaction *type* is decided by the endpoint (purchase vs sale request),
+ * not the payload. "Cannot oversell" is a stateful rule that depends on the WAC
+ * chain at the transaction's date, so it is enforced in the engine, not here.
  */
-class StoreTransactionRequest extends FormRequest
+abstract class AbstractStoreTransactionRequest extends FormRequest
 {
+    /**
+     * The transaction type this request records.
+     */
+    abstract protected function transactionType(): TransactionType;
+
+    /**
+     * Type-specific validation rules merged into the shared set (e.g. a
+     * purchase's buying_price). Sales add none.
+     *
+     * @return array<string, mixed>
+     */
+    protected function priceRules(): array
+    {
+        return [];
+    }
+
+    /**
+     * The unit purchase cost to persist, or null for a kind that carries no
+     * price (a sale's cost is derived from the WAC, never from the payload).
+     */
+    protected function buyingPrice(): ?string
+    {
+        return null;
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -31,7 +58,7 @@ class StoreTransactionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'date' => [
                 'required',
@@ -46,21 +73,20 @@ class StoreTransactionRequest extends FormRequest
                 ),
             ],
             'quantity' => ['required', 'numeric', 'decimal:0,2', 'min:0.01'],
-            'price' => ['required', 'numeric', 'decimal:0,2', 'min:0'],
-        ];
+        ], $this->priceRules());
     }
 
     /**
      * Build the DTO for a new transaction; the type comes from the endpoint.
      */
-    public function toDto(TransactionType $type): TransactionDTO
+    public function toDto(): TransactionDTO
     {
         return new TransactionDTO(
             productId: (int) $this->validated('product_id'),
-            type: $type,
+            type: $this->transactionType(),
             date: $this->validated('date'),
             quantity: (string) $this->validated('quantity'),
-            price: (string) $this->validated('price'),
+            buyingPrice: $this->buyingPrice(),
         );
     }
 }

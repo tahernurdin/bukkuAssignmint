@@ -33,7 +33,7 @@ class WacLedgerServiceTest extends TestCase
             'type' => $type,
             'date' => $date,
             'quantity' => $quantity,
-            'price' => $price,
+            'buying_price' => $price,
         ]));
     }
 

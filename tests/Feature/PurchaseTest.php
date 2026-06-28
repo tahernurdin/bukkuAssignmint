@@ -18,7 +18,7 @@ class PurchaseTest extends TestCase
             'product_id' => $product->id,
             'date' => '2022-01-01',
             'quantity' => '150',
-            'price' => '2.00',
+            'buying_price' => '2.00',
         ], $overrides);
     }
 
@@ -55,7 +55,7 @@ class PurchaseTest extends TestCase
         $product = Product::factory()->create();
         $headers = $this->authHeaders();
 
-        $this->withHeaders($headers)->postJson('/api/purchases', $this->purchasePayload($product, ['date' => '2022-01-05', 'quantity' => '10', 'price' => '1.50']));
+        $this->withHeaders($headers)->postJson('/api/purchases', $this->purchasePayload($product, ['date' => '2022-01-05', 'quantity' => '10', 'buying_price' => '1.50']));
         $this->withHeaders($headers)->postJson('/api/purchases', $this->purchasePayload($product, ['date' => '2022-01-01']));
 
         $this->withHeaders($headers)->getJson('/api/purchases')
@@ -93,7 +93,7 @@ class PurchaseTest extends TestCase
         $this->withHeaders($this->authHeaders())
             ->postJson('/api/purchases', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['product_id', 'date', 'quantity', 'price']);
+            ->assertJsonValidationErrors(['product_id', 'date', 'quantity', 'buying_price']);
     }
 
     public function test_it_rejects_non_positive_quantity(): void

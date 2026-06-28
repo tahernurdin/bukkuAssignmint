@@ -35,8 +35,8 @@ interface TransactionRepositoryInterface
     public function create(TransactionDTO $dto): Transaction;
 
     /**
-     * Update an existing transaction's mutable fields (date, quantity, price);
-     * product and type are immutable.
+     * Update an existing transaction's mutable fields (date, quantity,
+     * buying_price); product and type are immutable.
      */
     public function update(Transaction $transaction, TransactionUpdateDTO $dto): Transaction;
 

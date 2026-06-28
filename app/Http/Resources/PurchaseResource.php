@@ -31,7 +31,7 @@ class PurchaseResource extends JsonResource
 
             // What was purchased.
             'quantity' => $this->decimal($this->quantity),
-            'price' => $this->decimal($this->price),
+            'buying_price' => $this->decimal($this->buying_price),
 
             // Inventory state after this purchase (WAC method).
             'wac' => $this->decimal($this->wac_at_time),

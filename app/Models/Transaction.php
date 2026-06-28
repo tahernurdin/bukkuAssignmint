@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'type',
     'date',
     'quantity',
-    'price',
+    'buying_price',
     'calculated_cost',
     'wac_at_time',
     'quantity_on_hand',
@@ -45,7 +45,7 @@ class Transaction extends Model
             'type' => TransactionType::class,
             'date' => 'date:Y-m-d',
             'quantity' => 'decimal:2',
-            'price' => 'decimal:2',
+            'buying_price' => 'decimal:2',
             'quantity_on_hand' => 'decimal:2',
             // High precision retained internally; rounded for display in Resources.
             'calculated_cost' => 'decimal:6',

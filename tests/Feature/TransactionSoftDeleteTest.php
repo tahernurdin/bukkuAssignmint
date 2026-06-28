@@ -23,7 +23,7 @@ class TransactionSoftDeleteTest extends TestCase
         $headers = $this->authHeaders();
 
         $purchaseId = $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ])->json('data.id');
 
         $this->withHeaders($headers)->deleteJson("/api/purchases/{$purchaseId}")
@@ -34,7 +34,7 @@ class TransactionSoftDeleteTest extends TestCase
 
         // The same product+date is free again (the unique index used to block this).
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '5', 'price' => '3.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '5', 'buying_price' => '3.00',
         ])->assertStatus(201);
     }
 
@@ -49,7 +49,7 @@ class TransactionSoftDeleteTest extends TestCase
         // next live one.
         for ($i = 0; $i < 3; $i++) {
             $id = $this->withHeaders($headers)->postJson('/api/purchases', [
-                'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+                'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
             ])->assertStatus(201)->json('data.id');
 
             $this->withHeaders($headers)->deleteJson("/api/purchases/{$id}")
@@ -58,7 +58,7 @@ class TransactionSoftDeleteTest extends TestCase
 
         // One more live transaction sticks after all those delete cycles.
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '5', 'price' => '3.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '5', 'buying_price' => '3.00',
         ])->assertStatus(201);
     }
 
@@ -68,12 +68,12 @@ class TransactionSoftDeleteTest extends TestCase
         $headers = $this->authHeaders();
 
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ])->assertStatus(201);
 
         // No delete in between: the date is still occupied by a live transaction.
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '5', 'price' => '3.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '5', 'buying_price' => '3.00',
         ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('date');
@@ -85,10 +85,10 @@ class TransactionSoftDeleteTest extends TestCase
         $headers = $this->authHeaders();
 
         $keptId = $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ])->json('data.id');
         $deletedId = $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-03', 'quantity' => '10', 'price' => '4.00',
+            'product_id' => $product->id, 'date' => '2022-01-03', 'quantity' => '10', 'buying_price' => '4.00',
         ])->json('data.id');
 
         $this->withHeaders($headers)->deleteJson("/api/purchases/{$deletedId}")

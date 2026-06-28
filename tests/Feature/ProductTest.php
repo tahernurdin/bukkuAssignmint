@@ -138,7 +138,7 @@ class ProductTest extends TestCase
             'type' => TransactionType::Purchase,
             'date' => '2022-01-01',
             'quantity' => '10',
-            'price' => '2.00',
+            'buying_price' => '2.00',
         ]);
 
         $this->withHeaders($this->authHeaders())

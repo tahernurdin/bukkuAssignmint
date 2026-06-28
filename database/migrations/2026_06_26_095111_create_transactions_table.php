@@ -23,10 +23,11 @@ return new class extends Migration
             $table->string('type'); // App\Enums\TransactionType: 'purchase' | 'sale'
             $table->date('date');
 
-            // Transaction inputs. Quantity is fractional-capable; price is the
-            // unit purchase cost (purchase) or unit sale price (sale).
+            // Transaction inputs. Quantity is fractional-capable; buying_price is
+            // the unit purchase cost and is set on purchases only — a sale carries
+            // no price, its cost of goods sold is derived from the running WAC.
             $table->decimal('quantity', 15, 2);
-            $table->decimal('price', 15, 2);
+            $table->decimal('buying_price', 15, 2)->nullable();
 
             // WAC snapshot AFTER this transaction. High precision (6 dp) so the
             // running average does not drift over a long chain of transactions;

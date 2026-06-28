@@ -63,12 +63,12 @@ class WacLedgerService
     private function apply(Transaction $transaction, string $quantityBefore, string $valueBefore): array
     {
         $quantity = (string) $transaction->quantity;
-        $price = (string) $transaction->price;
 
         if ($transaction->type === TransactionType::Purchase) {
             // Add purchased units and their value, then recompute the average.
+            $buyingPrice = (string) $transaction->buying_price;
             $newQuantity = bcadd($quantityBefore, $quantity, self::QTY_SCALE);
-            $newValue = bcadd($valueBefore, bcmul($quantity, $price, self::SCALE), self::SCALE);
+            $newValue = bcadd($valueBefore, bcmul($quantity, $buyingPrice, self::SCALE), self::SCALE);
             $wac = $this->average($newValue, $newQuantity);
 
             return $this->persist($transaction, null, $wac, $newQuantity, $newValue);

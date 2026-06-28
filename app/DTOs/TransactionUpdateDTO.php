@@ -7,7 +7,8 @@ namespace App\DTOs;
  *
  * Product and type are fixed for the life of a transaction (it never jumps
  * ledgers or flips between purchase and sale), so an update only ever changes
- * date, quantity and price. The immutable fields aren't carried here: the
+ * date, quantity and (for purchases) the buying price. The immutable fields
+ * aren't carried here: the
  * service applies this onto the existing row it has already loaded by id.
  *
  * Monetary/quantity values are kept as strings so they flow into the BCMath
@@ -18,6 +19,6 @@ readonly class TransactionUpdateDTO
     public function __construct(
         public string $date,
         public string $quantity,
-        public string $price,
+        public ?string $buyingPrice, // unit purchase cost; null for sales
     ) {}
 }

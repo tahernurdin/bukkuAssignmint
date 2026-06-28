@@ -8,13 +8,15 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Validates an update to an existing transaction (bonus feature).
+ * Shared validation for updating an existing transaction (bonus feature).
  *
- * Only date, quantity and price are mutable; product and type are fixed for
- * the life of a transaction so it never jumps between ledgers. Overselling
- * introduced anywhere downstream is caught during recalculation in the engine.
+ * Only date, quantity and (for purchases) the buying price are mutable; product
+ * and type are fixed for the life of a transaction so it never jumps between
+ * ledgers. A concrete request adds whatever price field its kind carries.
+ * Overselling introduced anywhere downstream is caught during recalculation in
+ * the engine.
  */
-class UpdateTransactionRequest extends FormRequest
+abstract class AbstractUpdateTransactionRequest extends FormRequest
 {
     /**
      * The transaction being edited, resolved once from the route id (soft-deleted
@@ -23,6 +25,26 @@ class UpdateTransactionRequest extends FormRequest
      * id to the endpoint's type and answers 404 when it can't.
      */
     private ?Transaction $existing = null;
+
+    /**
+     * Type-specific validation rules merged into the shared set (e.g. a
+     * purchase's buying_price). Sales add none.
+     *
+     * @return array<string, mixed>
+     */
+    protected function priceRules(): array
+    {
+        return [];
+    }
+
+    /**
+     * The unit purchase cost to persist, or null for a kind that carries no
+     * price.
+     */
+    protected function buyingPrice(): ?string
+    {
+        return null;
+    }
 
     /**
      * Determine if the user is authorized to make this request.
@@ -39,24 +61,23 @@ class UpdateTransactionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'date' => $this->dateRules(),
             'quantity' => ['required', 'numeric', 'decimal:0,2', 'min:0.01'],
-            'price' => ['required', 'numeric', 'decimal:0,2', 'min:0'],
-        ];
+        ], $this->priceRules());
     }
 
     /**
-     * Build the DTO for the update. Only date/quantity/price may change (product
-     * and type are immutable), so this carries just those — no need to load the
-     * existing row here; the service applies it onto the row it looks up by id.
+     * Build the DTO for the update. Only date/quantity/buying_price may change
+     * (product and type are immutable), so this carries just those — the service
+     * applies it onto the existing row it looks up by id.
      */
     public function toDto(): TransactionUpdateDTO
     {
         return new TransactionUpdateDTO(
             date: $this->validated('date'),
             quantity: (string) $this->validated('quantity'),
-            price: (string) $this->validated('price'),
+            buyingPrice: $this->buyingPrice(),
         );
     }
 

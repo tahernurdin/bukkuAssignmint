@@ -31,7 +31,7 @@ class EloquentTransactionRepository implements TransactionRepositoryInterface
         $transaction->update([
             'date' => $dto->date,
             'quantity' => $dto->quantity,
-            'price' => $dto->price,
+            'buying_price' => $dto->buyingPrice,
         ]);
 
         return $transaction;
@@ -88,7 +88,7 @@ class EloquentTransactionRepository implements TransactionRepositoryInterface
             'type' => $dto->type,
             'date' => $dto->date,
             'quantity' => $dto->quantity,
-            'price' => $dto->price,
+            'buying_price' => $dto->buyingPrice,
         ];
     }
 }

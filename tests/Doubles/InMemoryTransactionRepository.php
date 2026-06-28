@@ -62,7 +62,7 @@ class InMemoryTransactionRepository implements TransactionRepositoryInterface
         $transaction->fill([
             'date' => $dto->date,
             'quantity' => $dto->quantity,
-            'price' => $dto->price,
+            'buying_price' => $dto->buyingPrice,
         ]);
 
         return $transaction;
@@ -119,7 +119,7 @@ class InMemoryTransactionRepository implements TransactionRepositoryInterface
             'type' => $dto->type,
             'date' => $dto->date,
             'quantity' => $dto->quantity,
-            'price' => $dto->price,
+            'buying_price' => $dto->buyingPrice,
         ];
     }
 

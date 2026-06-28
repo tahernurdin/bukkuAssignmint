@@ -30,9 +30,9 @@ class SaleResource extends JsonResource
             'product_id' => $this->product_id,
             'product' => new ProductResource($this->whenLoaded('product')),
 
-            // What was sold.
+            // What was sold (a sale carries no price of its own — its cost is
+            // derived from the running WAC, below).
             'quantity' => $this->decimal($this->quantity),
-            'price' => $this->decimal($this->price),
 
             // Costing: WAC applied and the resulting cost of goods sold.
             'wac' => $this->decimal($this->wac_at_time),

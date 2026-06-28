@@ -23,16 +23,16 @@ class TransactionRecalculationTest extends TestCase
 
         // 100 @ 1.00 then sell 40 => sale cost 40.00 at average 1.00.
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '100', 'price' => '1.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '100', 'buying_price' => '1.00',
         ]);
         $saleId = $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-10', 'quantity' => '40', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-10', 'quantity' => '40',
         ])->json('data.id');
 
         // Insert a pricier purchase in between (out of order): 100 @ 3.00.
         // New average before the sale = 400 / 200 = 2.00, so cost becomes 80.00.
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '100', 'price' => '3.00',
+            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '100', 'buying_price' => '3.00',
         ])->assertStatus(201);
 
         $this->withHeaders($headers)->getJson('/api/sales')
@@ -47,15 +47,15 @@ class TransactionRecalculationTest extends TestCase
         $headers = $this->authHeaders();
 
         $purchaseId = $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ])->json('data.id');
         $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '5', 'price' => '9.00',
+            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '5',
         ]);
 
-        // Bump the purchase price to 4.00: average becomes 4.00, sale cost 20.00.
+        // Bump the buying price to 4.00: average becomes 4.00, sale cost 20.00.
         $this->withHeaders($headers)->patchJson("/api/purchases/{$purchaseId}", [
-            'date' => '2022-01-01', 'quantity' => '10', 'price' => '4.00',
+            'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '4.00',
         ])->assertStatus(200);
 
         $this->withHeaders($headers)->getJson('/api/sales')
@@ -68,13 +68,13 @@ class TransactionRecalculationTest extends TestCase
         $headers = $this->authHeaders();
 
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ]);
         $deletableId = $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-03', 'quantity' => '10', 'price' => '4.00',
+            'product_id' => $product->id, 'date' => '2022-01-03', 'quantity' => '10', 'buying_price' => '4.00',
         ])->json('data.id');
         $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '5', 'price' => '9.00',
+            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '5',
         ]);
 
         // With both purchases the average is 3.00 (cost 15.00). Remove the
@@ -92,15 +92,15 @@ class TransactionRecalculationTest extends TestCase
         $headers = $this->authHeaders();
 
         $purchaseId = $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ])->json('data.id');
         $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '8', 'price' => '9.00',
+            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '8',
         ]);
 
         // Reducing the purchase to 5 units would leave the 8-unit sale oversold.
         $this->withHeaders($headers)->patchJson("/api/purchases/{$purchaseId}", [
-            'date' => '2022-01-01', 'quantity' => '5', 'price' => '2.00',
+            'date' => '2022-01-01', 'quantity' => '5', 'buying_price' => '2.00',
         ])->assertStatus(422);
 
         // The whole operation rolled back: the purchase is still 10 units.
@@ -116,10 +116,10 @@ class TransactionRecalculationTest extends TestCase
         $headers = $this->authHeaders();
 
         $this->withHeaders($headers)->postJson('/api/purchases', [
-            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'price' => '2.00',
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
         ]);
         $saleId = $this->withHeaders($headers)->postJson('/api/sales', [
-            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '5', 'price' => '9.00',
+            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '5',
         ])->json('data.id');
 
         $this->withHeaders($headers)->deleteJson("/api/purchases/{$saleId}")
