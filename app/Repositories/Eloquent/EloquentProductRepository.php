@@ -11,20 +11,27 @@ class EloquentProductRepository implements ProductRepositoryInterface
 {
     public function all(): Collection
     {
-        return Product::orderBy('name')->get();
+        return Product::with('latestTransaction')->orderBy('name')->get();
     }
 
     public function find(int $id): ?Product
     {
-        return Product::find($id);
+        return Product::with('latestTransaction')->find($id);
     }
 
     public function create(ProductDTO $dto): Product
     {
-        return Product::create([
+        $product = Product::create([
             'name' => $dto->name,
             'sku' => $dto->sku,
         ]);
+
+        // A brand-new product holds nothing; seed the (empty) snapshot relation
+        // so its response carries the same inventory fields as list/show without
+        // an extra query.
+        $product->setRelation('latestTransaction', null);
+
+        return $product;
     }
 
     public function update(Product $product, ProductDTO $dto): Product

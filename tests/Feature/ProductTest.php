@@ -147,4 +147,73 @@ class ProductTest extends TestCase
 
         $this->assertDatabaseHas('products', ['id' => $product->id]);
     }
+
+    public function test_show_includes_current_inventory_and_wac(): void
+    {
+        $product = Product::factory()->create();
+        $headers = $this->authHeaders();
+
+        $this->withHeaders($headers)->postJson('/api/purchases', [
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '150', 'buying_price' => '2.00',
+        ])->assertStatus(201);
+        $this->withHeaders($headers)->postJson('/api/purchases', [
+            'product_id' => $product->id, 'date' => '2022-01-05', 'quantity' => '10', 'buying_price' => '1.50',
+        ])->assertStatus(201);
+
+        // 160 units worth 315.00; WAC 315/160 = 1.96875 (displayed 1.97).
+        $this->withHeaders($headers)->getJson("/api/products/{$product->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.quantity_on_hand', '160.00')
+            ->assertJsonPath('data.value_on_hand', '315.00')
+            ->assertJsonPath('data.wac', '1.97');
+    }
+
+    public function test_a_newly_created_product_reports_zero_stock_and_null_wac(): void
+    {
+        $this->withHeaders($this->authHeaders())
+            ->postJson('/api/products', ['name' => 'Fresh', 'sku' => 'FRESH-1'])
+            ->assertStatus(201)
+            ->assertJsonPath('data.quantity_on_hand', '0.00')
+            ->assertJsonPath('data.value_on_hand', '0.00')
+            ->assertJsonPath('data.wac', null);
+    }
+
+    public function test_a_depleted_product_reports_null_wac(): void
+    {
+        $product = Product::factory()->create();
+        $headers = $this->authHeaders();
+
+        $this->withHeaders($headers)->postJson('/api/purchases', [
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
+        ])->assertStatus(201);
+        $this->withHeaders($headers)->postJson('/api/sales', [
+            'product_id' => $product->id, 'date' => '2022-01-02', 'quantity' => '10',
+        ])->assertStatus(201);
+
+        $this->withHeaders($headers)->getJson("/api/products/{$product->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.quantity_on_hand', '0.00')
+            ->assertJsonPath('data.value_on_hand', '0.00')
+            ->assertJsonPath('data.wac', null);
+    }
+
+    public function test_a_product_embedded_in_a_sale_omits_inventory_fields(): void
+    {
+        $product = Product::factory()->create();
+        $headers = $this->authHeaders();
+
+        $this->withHeaders($headers)->postJson('/api/purchases', [
+            'product_id' => $product->id, 'date' => '2022-01-01', 'quantity' => '10', 'buying_price' => '2.00',
+        ])->assertStatus(201);
+        $this->withHeaders($headers)->postJson('/api/sales', [
+            'product_id' => $product->id, 'date' => '2022-01-02', 'quantity' => '5',
+        ])->assertStatus(201);
+
+        // The nested product carries only identity, never the inventory snapshot.
+        $this->withHeaders($headers)->getJson('/api/sales')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.product.id', $product->id)
+            ->assertJsonMissingPath('data.0.product.wac')
+            ->assertJsonMissingPath('data.0.product.quantity_on_hand');
+    }
 }
