@@ -3,6 +3,7 @@
 namespace App\Repositories\Contracts;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,14 +23,22 @@ interface TransactionRepositoryInterface
     public function find(int $id): ?Transaction;
 
     /**
+     * Find a transaction of the given type by id, or null. Soft-deleted rows are
+     * excluded, so a deleted transaction reads as missing — and an id of the
+     * wrong type (a sale looked up as a purchase) also reads as missing.
+     */
+    public function findOfType(TransactionType $type, int $id): ?Transaction;
+
+    /**
      * Persist a new transaction.
      */
     public function create(TransactionDTO $dto): Transaction;
 
     /**
-     * Update an existing transaction.
+     * Update an existing transaction's mutable fields (date, quantity, price);
+     * product and type are immutable.
      */
-    public function update(Transaction $transaction, TransactionDTO $dto): Transaction;
+    public function update(Transaction $transaction, TransactionUpdateDTO $dto): Transaction;
 
     /**
      * Delete a transaction.

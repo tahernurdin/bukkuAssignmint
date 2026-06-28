@@ -3,6 +3,7 @@
 namespace Tests\Doubles;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
@@ -44,14 +45,25 @@ class InMemoryTransactionRepository implements TransactionRepositoryInterface
         return null;
     }
 
+    public function findOfType(TransactionType $type, int $id): ?Transaction
+    {
+        $transaction = $this->find($id);
+
+        return $transaction?->type === $type ? $transaction : null;
+    }
+
     public function create(TransactionDTO $dto): Transaction
     {
         return $this->add(new Transaction($this->toColumns($dto)));
     }
 
-    public function update(Transaction $transaction, TransactionDTO $dto): Transaction
+    public function update(Transaction $transaction, TransactionUpdateDTO $dto): Transaction
     {
-        $transaction->fill($this->toColumns($dto));
+        $transaction->fill([
+            'date' => $dto->date,
+            'quantity' => $dto->quantity,
+            'price' => $dto->price,
+        ]);
 
         return $transaction;
     }

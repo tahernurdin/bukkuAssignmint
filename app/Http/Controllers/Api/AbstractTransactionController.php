@@ -6,7 +6,6 @@ use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreTransactionRequest;
 use App\Http\Requests\Api\UpdateTransactionRequest;
-use App\Models\Transaction;
 use App\Services\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -67,39 +66,28 @@ abstract class AbstractTransactionController extends Controller
     }
 
     /**
-     * Update an existing transaction (bonus) and recost the affected chain.
+     * Update an existing transaction (bonus) and recost the affected chain. The
+     * service looks the id up scoped to this endpoint's type, so a wrong-type id
+     * (e.g. a sale via the purchases endpoint) or a soft-deleted one is a 404.
      */
-    public function update(UpdateTransactionRequest $request, Transaction $transaction): JsonResource
+    public function update(UpdateTransactionRequest $request, int $id): JsonResource
     {
-        $this->ensureType($transaction);
-
         $resource = $this->resourceClass();
 
-        $updated = $this->transactions->update(
-            $transaction,
-            $request->toDto()
+        return $resource::make(
+            $this->transactions->update($this->type(), $id, $request->toDto())
         );
-
-        return $resource::make($updated);
     }
 
     /**
-     * Delete a transaction (bonus) and recost everything after it.
+     * Delete a transaction (bonus) and recost everything after it. As with
+     * update, the lookup is scoped to this endpoint's type, so a wrong-type or
+     * soft-deleted id is a 404.
      */
-    public function destroy(Transaction $transaction): Response
+    public function destroy(int $id): Response
     {
-        $this->ensureType($transaction);
-        $this->transactions->delete($transaction);
+        $this->transactions->delete($this->type(), $id);
 
         return response()->noContent();
-    }
-
-    /**
-     * Guard against operating on a transaction of the wrong type through this
-     * endpoint (e.g. a sale via the purchases endpoint) — treated as a 404.
-     */
-    protected function ensureType(Transaction $transaction): void
-    {
-        abort_unless($transaction->type === $this->type(), Response::HTTP_NOT_FOUND);
     }
 }

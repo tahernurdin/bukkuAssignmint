@@ -3,6 +3,7 @@
 namespace App\Repositories\Eloquent;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
@@ -15,14 +16,23 @@ class EloquentTransactionRepository implements TransactionRepositoryInterface
         return Transaction::find($id);
     }
 
+    public function findOfType(TransactionType $type, int $id): ?Transaction
+    {
+        return Transaction::where('type', $type)->find($id);
+    }
+
     public function create(TransactionDTO $dto): Transaction
     {
         return Transaction::create($this->toColumns($dto));
     }
 
-    public function update(Transaction $transaction, TransactionDTO $dto): Transaction
+    public function update(Transaction $transaction, TransactionUpdateDTO $dto): Transaction
     {
-        $transaction->update($this->toColumns($dto));
+        $transaction->update([
+            'date' => $dto->date,
+            'quantity' => $dto->quantity,
+            'price' => $dto->price,
+        ]);
 
         return $transaction;
     }

@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\DTOs\TransactionDTO;
+use App\DTOs\TransactionUpdateDTO;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
 use App\Services\Inventory\WacLedgerService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -28,6 +30,18 @@ class TransactionService
     ) {}
 
     /**
+     * Find a transaction of the given type by id, or throw a 404. Scoping the
+     * lookup to the type is what turns a cross-type id (e.g. a sale reached via
+     * the purchases endpoint) into a 404 instead of an edit of the wrong ledger,
+     * folding the old per-controller type guard into the read itself.
+     */
+    public function findOfTypeOrFail(TransactionType $type, int $id): Transaction
+    {
+        return $this->transactions->findOfType($type, $id)
+            ?? throw (new ModelNotFoundException())->setModel(Transaction::class, [$id]);
+    }
+
+    /**
      * Record a new transaction and cost the affected chain.
      */
     public function create(TransactionDTO $dto): Transaction
@@ -41,25 +55,32 @@ class TransactionService
     }
 
     /**
-     * Update a transaction and recalculate from the earliest affected date
-     * (its old date or new date, whichever is earlier).
+     * Update a transaction of the given type (looked up here; 404 if missing or
+     * the wrong type) and recalculate from the earliest affected date — its old
+     * date or new date, whichever is earlier. Product and type are immutable, so
+     * the update carries only the mutable fields.
      */
-    public function update(Transaction $transaction, TransactionDTO $dto): Transaction
+    public function update(TransactionType $type, int $id, TransactionUpdateDTO $dto): Transaction
     {
+        $transaction = $this->findOfTypeOrFail($type, $id);
+
         return DB::transaction(function () use ($transaction, $dto) {
             $earliestAffected = min($transaction->date->toDateString(), $dto->date);
             $this->transactions->update($transaction, $dto);
-            $this->ledger->recalculateFrom($dto->productId, $earliestAffected);
+            $this->ledger->recalculateFrom($transaction->product_id, $earliestAffected);
 
             return $this->transactions->find($transaction->id)->load('product');
         });
     }
 
     /**
-     * Delete a transaction and recalculate everything after it.
+     * Delete a transaction of the given type (looked up here; 404 if missing or
+     * the wrong type) and recalculate everything after it.
      */
-    public function delete(Transaction $transaction): void
+    public function delete(TransactionType $type, int $id): void
     {
+        $transaction = $this->findOfTypeOrFail($type, $id);
+
         DB::transaction(function () use ($transaction) {
             $productId = $transaction->product_id;
             $fromDate = $transaction->date->toDateString();

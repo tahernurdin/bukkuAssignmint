@@ -23,12 +23,14 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
     // Purchases and sales. update/destroy are the bonus features; the base
-    // requirement only needs index + store.
+    // requirement only needs index + store. ID-based routes (no model binding)
+    // so the controller delegates fetching to TransactionService, which scopes
+    // the lookup to the endpoint's type.
     Route::apiResource('purchases', PurchaseController::class)
-        ->parameters(['purchases' => 'transaction'])
+        ->parameters(['purchases' => 'id'])
         ->except(['show']);
     Route::apiResource('sales', SaleController::class)
-        ->parameters(['sales' => 'transaction'])
+        ->parameters(['sales' => 'id'])
         ->except(['show']);
 
     // Demonstration of Role Middleware
