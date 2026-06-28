@@ -18,9 +18,9 @@ Route::middleware('auth:api')->group(function () {
     // fetching to ProductService.
     Route::get('/products', [ProductController::class, 'index']);
     Route::post('/products', [ProductController::class, 'store']);
-    Route::get('/products/{id}', [ProductController::class, 'show']);
-    Route::patch('/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    Route::get('/products/{id}', [ProductController::class, 'show'])->where('id', '[0-9]+');
+    Route::patch('/products/{id}', [ProductController::class, 'update'])->where('id', '[0-9]+');
+    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->where('id', '[0-9]+');
 
     // Purchases and sales. update/destroy are the bonus features; the base
     // requirement only needs index + store. ID-based routes (no model binding)

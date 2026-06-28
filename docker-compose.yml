@@ -100,6 +100,8 @@ services:
         php artisan key:generate --no-interaction --force
         echo "==> Running migrations..."
         php artisan migrate --no-interaction --force
+        echo "==> Fixing storage permissions..."
+        chmod -R 777 storage bootstrap/cache
         echo "==> Dependencies installed and app bootstrapped!"
     depends_on:
       mysql:
