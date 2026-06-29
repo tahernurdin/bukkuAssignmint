@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "tahernurdin/wac-costing-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "RESTful inventory & costing API using the Weighted Average Cost (WAC) method.",
+    "keywords": ["laravel", "wac", "inventory", "costing", "api"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
