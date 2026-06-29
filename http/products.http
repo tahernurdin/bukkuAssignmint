@@ -8,7 +8,8 @@ Authorization: Bearer {{auth_token}}
 ### --------------------------------------------------------
 ### List products — filtered & paginated
 ### search: partial match on name or SKU
-### created_from / created_to: Y-m-d, inclusive range
+### created_from / created_to: Y-m-d, inclusive range (filters on created_at,
+###   which the response returns as created_at/updated_at on product views)
 ### per_page: 1–100 (default 15), page: 1-based
 ### --------------------------------------------------------
 GET http://localhost:8080/api/products?search=widget&created_from=2026-01-01&created_to=2026-06-30&per_page=10&page=1

@@ -27,7 +27,7 @@ class ProductTest extends TestCase
             ->getJson('/api/products')
             ->assertStatus(200)
             ->assertJsonCount(3, 'data')
-            ->assertJsonStructure(['data' => [['id', 'name', 'sku']]]);
+            ->assertJsonStructure(['data' => [['id', 'name', 'sku', 'created_at', 'updated_at']]]);
     }
 
     public function test_listing_products_is_paginated_with_meta(): void

@@ -33,6 +33,18 @@ class ProductResource extends JsonResource
                 $this->resource->relationLoaded('latestTransaction'),
                 fn () => $this->currentInventory(),
             ),
+
+            // Audit timestamps, exposed on the same (full) product views as the
+            // inventory above — notably the listing the created_from/created_to
+            // filter queries against. Kept out of the embedded product reference
+            // in sale/purchase payloads, which never loads the snapshot relation.
+            $this->mergeWhen(
+                $this->resource->relationLoaded('latestTransaction'),
+                fn () => [
+                    'created_at' => $this->created_at?->toJSON(),
+                    'updated_at' => $this->updated_at?->toJSON(),
+                ],
+            ),
         ];
     }
 
