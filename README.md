@@ -90,10 +90,7 @@ vendors, copies `.env`, generates the app key, and runs migrations automatically
 # 1. Start the stack (first boot builds the image and installs dependencies)
 docker compose up --build -d
 
-# 2. Generate a JWT secret (once only — writes JWT_SECRET into .env)
-docker compose exec php php artisan jwt:secret
-
-# 3. Seed dummy products and a test user
+# 2. Seed dummy products and a test user
 docker compose exec php php artisan db:seed
 ```
 
