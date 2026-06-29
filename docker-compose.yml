@@ -93,7 +93,7 @@ services:
     command:
       - |
         echo "==> Installing Composer dependencies..."
-        composer install --no-interaction --prefer-dist --optimize-autoloader
+        composer install --no-interaction --optimize-autoloader
         echo "==> Ensuring .env exists..."
         php -r "file_exists('.env') || copy('.env.example', '.env');"
         echo "==> Generating app key if needed..."
