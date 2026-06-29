@@ -48,7 +48,8 @@ class SaleTest extends TestCase
             ->assertJsonPath('data.wac', '1.97')
             ->assertJsonPath('data.cost', '9.84')
             ->assertJsonPath('data.quantity_on_hand', '155.00')
-            ->assertJsonPath('data.value_on_hand', '305.16');
+            ->assertJsonPath('data.value_on_hand', '305.16')
+            ->assertJsonStructure(['data' => ['created_at']]);
     }
 
     public function test_a_sale_response_carries_no_price(): void

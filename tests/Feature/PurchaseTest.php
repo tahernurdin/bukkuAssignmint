@@ -41,7 +41,8 @@ class PurchaseTest extends TestCase
             ->assertJsonPath('data.quantity', '150.00')
             ->assertJsonPath('data.wac', '2.00')
             ->assertJsonPath('data.quantity_on_hand', '150.00')
-            ->assertJsonPath('data.value_on_hand', '300.00');
+            ->assertJsonPath('data.value_on_hand', '300.00')
+            ->assertJsonStructure(['data' => ['created_at']]);
 
         $this->assertDatabaseHas('transactions', [
             'product_id' => $product->id,

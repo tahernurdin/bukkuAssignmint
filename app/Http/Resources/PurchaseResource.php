@@ -37,6 +37,11 @@ class PurchaseResource extends JsonResource
             'wac' => $this->decimal($this->wac_at_time),
             'quantity_on_hand' => $this->decimal($this->quantity_on_hand),
             'value_on_hand' => $this->decimal($this->value_on_hand),
+
+            // When the row was recorded — distinct from `date`, the ledger date.
+            // (updated_at is omitted: recosting rewrites downstream snapshots, so
+            // it would reflect the last recost rather than a direct edit.)
+            'created_at' => $this->created_at?->toJSON(),
         ];
     }
 }
