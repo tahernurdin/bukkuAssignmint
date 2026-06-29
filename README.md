@@ -79,6 +79,31 @@ math uses **BCMath** to avoid binary-float drift.
 
 ## Setup
 
+### Option A — Docker (recommended)
+
+**Requirements:** Docker + Docker Compose.
+
+The stack is Nginx + PHP-FPM + MySQL 8. On first boot the `composer` service installs
+vendors, copies `.env`, generates the app key, and runs migrations automatically.
+
+```bash
+# 1. Start the stack (first boot builds the image and installs dependencies)
+docker compose up --build -d
+
+# 2. Generate a JWT secret (once only — writes JWT_SECRET into .env)
+docker compose exec php php artisan jwt:secret
+
+# 3. Seed dummy products and a test user
+docker compose exec php php artisan db:seed
+```
+
+The app is now reachable at **http://localhost:8080**
+(override the port with `APP_PORT=<port>` in `.env` before bringing the stack up).
+
+---
+
+### Option B — Local PHP
+
 **Requirements:** PHP 8.4+ (with `bcmath`), Composer. SQLite or MySQL.
 
 ```bash
@@ -90,9 +115,10 @@ cp .env.example .env
 php artisan key:generate
 php artisan jwt:secret          # generates JWT_SECRET
 
-# 3. Database — easiest path is SQLite (the .env.example default)
+# 3. Database
+#    SQLite (simplest) — switch .env to: DB_CONNECTION=sqlite
 touch database/database.sqlite
-#    ...or point .env at MySQL (DB_CONNECTION=mysql, DB_DATABASE=..., etc.)
+#    MySQL — leave .env at DB_CONNECTION=mysql and set DB_DATABASE / DB_USERNAME / DB_PASSWORD
 
 # 4. Migrate + seed dummy products and a test user
 php artisan migrate:fresh --seed
@@ -101,8 +127,8 @@ php artisan migrate:fresh --seed
 php artisan serve               # http://127.0.0.1:8000
 ```
 
-Seeded test user: `test@example.com` (password is the factory default `password`). Seeded
-products: Widget, Gadget, Gizmo, Doohickey, Thingamajig.
+Seeded test user: `test@example.com` (password: `password`). Seeded products: Widget,
+Gadget, Gizmo, Doohickey, Thingamajig.
 
 ---
 
