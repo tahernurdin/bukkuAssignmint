@@ -7,9 +7,19 @@
 ### ============================================================
 
 ### --------------------------------------------------------
-### List all sales
+### List all sales (no filters)
 ### --------------------------------------------------------
 GET http://localhost:8080/api/sales
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### --------------------------------------------------------
+### List sales — filtered & paginated
+### product_id: filter to a single product
+### date_from / date_to: Y-m-d ledger date, inclusive range
+### per_page: 1–100 (default 15), page: 1-based
+### --------------------------------------------------------
+GET http://localhost:8080/api/sales?product_id=1&date_from=2026-06-01&date_to=2026-06-30&per_page=10&page=1
 Accept: application/json
 Authorization: Bearer {{auth_token}}
 
