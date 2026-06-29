@@ -92,10 +92,11 @@ services:
     entrypoint: ["sh", "-c"]
     command:
       - |
-        echo "==> Installing Composer dependencies..."
-        composer install --no-interaction --optimize-autoloader
+        set -e
         echo "==> Ensuring .env exists..."
         php -r "file_exists('.env') || copy('.env.example', '.env');"
+        echo "==> Installing Composer dependencies..."
+        composer install --no-interaction --optimize-autoloader
         echo "==> Generating app key if needed..."
         grep -q '^APP_KEY=base64:' .env || php artisan key:generate --no-interaction
         echo "==> Generating JWT secret if needed..."
