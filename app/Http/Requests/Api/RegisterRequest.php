@@ -27,7 +27,6 @@ class RegisterRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:6'],
-            'role' => ['nullable', 'string', 'in:admin,user'],
         ];
     }
 
@@ -40,7 +39,6 @@ class RegisterRequest extends FormRequest
             name: $this->validated('name'),
             email: $this->validated('email'),
             password: $this->validated('password'),
-            role: $this->validated('role') ?? 'user',
         );
     }
 }

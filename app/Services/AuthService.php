@@ -22,7 +22,7 @@ class AuthService
             'name' => $dto->name,
             'email' => $dto->email,
             'password' => Hash::make($dto->password),
-            'role' => $dto->role,
+            'role' => 'user',
         ]);
     }
 

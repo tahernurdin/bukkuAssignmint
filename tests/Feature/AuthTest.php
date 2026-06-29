@@ -19,7 +19,6 @@ class AuthTest extends TestCase
             'name' => 'John Doe',
             'email' => 'john@example.com',
             'password' => 'password123',
-            'role' => 'user'
         ]);
 
         $response->assertStatus(201)
