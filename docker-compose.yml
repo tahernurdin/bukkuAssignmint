@@ -96,7 +96,28 @@ services:
         echo "==> Ensuring .env exists..."
         php -r "file_exists('.env') || copy('.env.example', '.env');"
         echo "==> Installing Composer dependencies..."
-        composer install --no-interaction --optimize-autoloader
+        # codeload.github.com intermittently rejects parallel HTTP/2 downloads
+        # with "HTTP/2 400" on a cold cache. Retry (cached zips are reused),
+        # dropping to serial downloads on later attempts to dodge multiplexing.
+        install_deps() {
+          composer install --no-interaction --optimize-autoloader
+        }
+        if ! install_deps; then
+          echo "==> Composer install failed, retrying with reduced parallelism..."
+          installed=0
+          for attempt in 1 2 3; do
+            if COMPOSER_MAX_PARALLEL_HTTP=1 install_deps; then
+              installed=1
+              break
+            fi
+            echo "==> Retry $$attempt failed; waiting before next attempt..."
+            sleep 5
+          done
+          if [ "$$installed" != "1" ]; then
+            echo "==> Composer install failed after retries"
+            exit 1
+          fi
+        fi
         echo "==> Generating app key if needed..."
         grep -q '^APP_KEY=base64:' .env || php artisan key:generate --no-interaction
         echo "==> Generating JWT secret if needed..."
