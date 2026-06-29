@@ -50,7 +50,7 @@ services:
     container_name: bukku_mysql
     restart: unless-stopped
     ports:
-      - "${DB_EXTERNAL_PORT:-3307}:3306"
+      - "${DB_EXTERNAL_PORT:-3306}:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-bukku}
       MYSQL_USER: ${DB_USERNAME:-bukku}
