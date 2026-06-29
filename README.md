@@ -14,6 +14,7 @@ and reports the cost of goods sold; it does not model carts, orders, customers o
 - [Architecture](#architecture)
 - [Setup](#setup)
 - [Authentication](#authentication)
+- [HTTP collection](#http-collection)
 - [API reference](#api-reference)
 - [Validation rules](#validation-rules)
 - [Assumptions & design decisions](#assumptions--design-decisions)
