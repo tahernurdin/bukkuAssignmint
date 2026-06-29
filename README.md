@@ -117,7 +117,6 @@ php artisan jwt:secret          # generates JWT_SECRET
 
 # 3. Database
 #    SQLite (simplest) — switch .env to: DB_CONNECTION=sqlite
-touch database/database.sqlite
 #    MySQL — leave .env at DB_CONNECTION=mysql and set DB_DATABASE / DB_USERNAME / DB_PASSWORD
 
 # 4. Migrate + seed dummy products and a test user
@@ -145,15 +144,33 @@ JWT (Bearer). Use the seeded user or register a new one, then send
 `Authorization: Bearer <token>` on every costing endpoint.
 
 ```bash
-# Login → returns the token (seeded user: test@example.com / password)
+# Login → returns the token (seeded admin: admin@example.com / password)
 curl -X POST http://127.0.0.1:8000/api/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"test@example.com","password":"password"}'
+  -d '{"email":"admin@example.com","password":"password"}'
 ```
 
 ```json
 { "access_token": "eyJ0eXAi...", "token_type": "bearer", "expires_in": 3600 }
 ```
+
+---
+
+## HTTP collection
+
+The [`http/`](http/) folder contains a full request collection for every endpoint, ready to
+run in VS Code (REST Client extension) or any JetBrains IDE:
+
+| File | Covers |
+|------|--------|
+| [`auth.http`](http/auth.http) | Register, login, logout |
+| [`products.http`](http/products.http) | Product CRUD |
+| [`purchases.http`](http/purchases.http) | Purchase recording & listing |
+| [`sales.http`](http/sales.http) | Sale recording & listing |
+| [`dashboards.http`](http/dashboards.http) | Dashboard / summary endpoints |
+
+Environment variables (base URL, token) are configured in
+[`http/http-client.env.json`](http/http-client.env.json).
 
 ---
 
