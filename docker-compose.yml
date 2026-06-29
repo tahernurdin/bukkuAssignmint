@@ -97,7 +97,9 @@ services:
         echo "==> Ensuring .env exists..."
         php -r "file_exists('.env') || copy('.env.example', '.env');"
         echo "==> Generating app key if needed..."
-        php artisan key:generate --no-interaction --force
+        grep -q '^APP_KEY=base64:' .env || php artisan key:generate --no-interaction
+        echo "==> Generating JWT secret if needed..."
+        grep -qE '^JWT_SECRET=.+' .env || php artisan jwt:secret --no-interaction --force
         echo "==> Running migrations..."
         php artisan migrate --no-interaction --force
         echo "==> Fixing storage permissions..."
